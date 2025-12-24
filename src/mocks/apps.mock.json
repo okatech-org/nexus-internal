@@ -10,6 +10,12 @@
       "iboite": true,
       "iasted": true,
       "icorrespondance": true
+    },
+    "icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
     }
   },
   {
@@ -23,6 +29,12 @@
       "iboite": true,
       "iasted": true,
       "icorrespondance": true
+    },
+    "icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
     }
   },
   {
@@ -36,6 +48,12 @@
       "iboite": true,
       "iasted": false,
       "icorrespondance": true
+    },
+    "icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": false,
+      "contact": true
     }
   },
   {
@@ -49,6 +67,12 @@
       "iboite": true,
       "iasted": true,
       "icorrespondance": true
+    },
+    "icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
     }
   },
   {
@@ -62,6 +86,12 @@
       "iboite": true,
       "iasted": true,
       "icorrespondance": false
+    },
+    "icom_features": {
+      "chat": true,
+      "call": false,
+      "meeting": false,
+      "contact": true
     }
   },
   {
@@ -75,6 +105,12 @@
       "iboite": false,
       "iasted": true,
       "icorrespondance": false
+    },
+    "icom_features": {
+      "chat": false,
+      "call": true,
+      "meeting": false,
+      "contact": true
     }
   },
   {
@@ -88,6 +124,12 @@
       "iboite": true,
       "iasted": false,
       "icorrespondance": false
+    },
+    "icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
     }
   }
 ]

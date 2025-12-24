@@ -9,8 +9,29 @@
     "network_type": "government",
     "realm": "platform",
     "actor_id": "platform-admin",
-    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": ["platform:*", "registry:*", "networks:*", "modules:*", "audit:read", "icom:*", "iboite:*", "iasted:*", "icorrespondance:*"],
+    "desired_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    },
+    "desired_icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
+    },
+    "permissions": [
+      "platform:*",
+      "registry:*",
+      "networks:*",
+      "modules:*",
+      "audit:read",
+      "icom:*",
+      "iboite:*",
+      "iasted:*",
+      "icorrespondance:*"
+    ],
     "description": "Full platform access - manage apps, networks, modules, and audit logs"
   },
   {
@@ -23,13 +44,33 @@
     "network_type": "government",
     "realm": "government",
     "actor_id": "tenant-admin-001",
-    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": ["tenant:*", "apps:read", "modules:write", "audit:read", "icom:*", "iboite:*", "iasted:*", "icorrespondance:read"],
+    "desired_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    },
+    "desired_icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
+    },
+    "permissions": [
+      "tenant:*",
+      "apps:read",
+      "modules:write",
+      "audit:read",
+      "icom:*",
+      "iboite:*",
+      "iasted:*",
+      "icorrespondance:read"
+    ],
     "description": "Tenant administration - manage tenant apps, modules and view audit"
   },
   {
-    "id": "service_gov_app",
-    "label": "Gov Service",
+    "id": "service_gov_full",
+    "label": "Gov Service (Full iCom)",
     "mode": "service",
     "app_id": "gov-app-1",
     "tenant_id": "ministry-1",
@@ -37,13 +78,36 @@
     "network_type": "government",
     "realm": "government",
     "actor_id": null,
-    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": ["icom:read", "icom:write", "iboite:read", "iboite:write", "iasted:chat", "iasted:summarize", "icorrespondance:read", "icorrespondance:write", "icorrespondance:approve"],
-    "description": "Government app service account - full module access including iCorrespondance"
+    "desired_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    },
+    "desired_icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
+    },
+    "permissions": [
+      "icom:chat:*",
+      "icom:call:use",
+      "icom:meeting:use",
+      "icom:contact:read",
+      "iboite:read",
+      "iboite:write",
+      "iasted:chat",
+      "iasted:summarize",
+      "icorrespondance:read",
+      "icorrespondance:write",
+      "icorrespondance:approve"
+    ],
+    "description": "Government app with full iCom: iChat + iAppel + iRéunion + iContact"
   },
   {
-    "id": "service_commercial_app",
-    "label": "Biz Service",
+    "id": "service_biz_call_contact",
+    "label": "Biz Service (Call+Contact)",
     "mode": "service",
     "app_id": "client-portal",
     "tenant_id": "client-1",
@@ -51,13 +115,31 @@
     "network_type": "commercial",
     "realm": "business",
     "actor_id": null,
-    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": false },
-    "permissions": ["icom:read", "icom:write", "iboite:read", "iboite:write", "iasted:chat", "iasted:summarize"],
-    "description": "Commercial app service account - no iCorrespondance (gov-only module)"
+    "desired_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": false
+    },
+    "desired_icom_features": {
+      "chat": false,
+      "call": true,
+      "meeting": false,
+      "contact": true
+    },
+    "permissions": [
+      "icom:call:use",
+      "icom:contact:read",
+      "iboite:read",
+      "iboite:write",
+      "iasted:chat",
+      "iasted:summarize"
+    ],
+    "description": "Commercial app with iCom à la carte: iAppel + iContact only (no Chat/Meeting)"
   },
   {
-    "id": "delegated_citizen",
-    "label": "Citizen (Delegated)",
+    "id": "delegated_citizen_chat_contact",
+    "label": "Citizen (Chat+Contact)",
     "mode": "delegated",
     "app_id": "idn-client-app",
     "tenant_id": "client-1",
@@ -65,13 +147,30 @@
     "network_type": "commercial",
     "realm": "citizen",
     "actor_id": "citizen-001",
-    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": false },
-    "permissions": ["icom:read", "icom:write", "iboite:read", "iboite:write", "iasted:chat"],
-    "description": "Citizen accessing via idn.ga-like client app - basic communication access"
+    "desired_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": false
+    },
+    "desired_icom_features": {
+      "chat": true,
+      "call": false,
+      "meeting": false,
+      "contact": true
+    },
+    "permissions": [
+      "icom:chat:*",
+      "icom:contact:read",
+      "iboite:read",
+      "iboite:write",
+      "iasted:chat"
+    ],
+    "description": "Citizen with iCom à la carte: iChat + iContact only (no Appel/Réunion)"
   },
   {
     "id": "delegated_gov_agent",
-    "label": "Gov Agent (Delegated)",
+    "label": "Gov Agent (Full iCom)",
     "mode": "delegated",
     "app_id": "gov-app-1",
     "tenant_id": "ministry-1",
@@ -79,8 +178,54 @@
     "network_type": "government",
     "realm": "government",
     "actor_id": "agent-007",
-    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": ["icom:*", "iboite:*", "iasted:*", "icorrespondance:read", "icorrespondance:write"],
-    "description": "Government agent accessing via official gov app - full access with iCorrespondance"
+    "desired_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    },
+    "desired_icom_features": {
+      "chat": true,
+      "call": true,
+      "meeting": true,
+      "contact": true
+    },
+    "permissions": [
+      "icom:*",
+      "iboite:*",
+      "iasted:*",
+      "icorrespondance:read",
+      "icorrespondance:write"
+    ],
+    "description": "Government agent with full iCom access + iCorrespondance"
+  },
+  {
+    "id": "service_startup_chat_only",
+    "label": "Startup (Chat Only)",
+    "mode": "service",
+    "app_id": "startup-app",
+    "tenant_id": "startup-1",
+    "network": "commercial-net-1",
+    "network_type": "commercial",
+    "realm": "business",
+    "actor_id": null,
+    "desired_modules": {
+      "icom": true,
+      "iboite": false,
+      "iasted": true,
+      "icorrespondance": false
+    },
+    "desired_icom_features": {
+      "chat": true,
+      "call": false,
+      "meeting": false,
+      "contact": true
+    },
+    "permissions": [
+      "icom:chat:*",
+      "icom:contact:read",
+      "iasted:chat"
+    ],
+    "description": "Startup app with minimal iCom: iChat + iContact only, no iBoîte"
   }
 ]
