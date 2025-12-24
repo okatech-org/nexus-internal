@@ -30,6 +30,16 @@ export interface Document {
   version: number;
   created_by: string;
   created_at: string;
+  file_size?: number;
+  mime_type?: string;
+  preview_url?: string;
+}
+
+export interface DocumentVersion {
+  version: number;
+  created_by: string;
+  created_at: string;
+  changes?: string;
 }
 
 export interface WorkflowEvent {

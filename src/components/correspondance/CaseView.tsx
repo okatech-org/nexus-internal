@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, 
   CheckCircle, 
@@ -10,17 +10,24 @@ import {
   File,
   MessageSquare,
   User,
-  Calendar
+  Calendar,
+  Plus,
+  Eye,
+  History
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Case, WorkflowStep } from '@/types/correspondance';
+import { Case, WorkflowStep, Document } from '@/types/correspondance';
+import { DocumentUpload, UploadedFile } from './DocumentUpload';
+import { DocumentPreview, DocumentWithVersions } from './DocumentPreview';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
+import { toast } from 'sonner';
 
 interface CaseViewProps {
   caseItem: Case;
   onTransition: (caseId: string, action: 'approve' | 'reject' | 'publish') => void;
+  onDocumentsAdded?: (caseId: string, documents: Document[]) => void;
 }
 
 const workflowSteps: { step: WorkflowStep; label: string; icon: typeof FileText }[] = [
@@ -32,10 +39,50 @@ const workflowSteps: { step: WorkflowStep; label: string; icon: typeof FileText 
 
 const stepIndex = (step: WorkflowStep) => workflowSteps.findIndex(s => s.step === step);
 
-export function CaseView({ caseItem, onTransition }: CaseViewProps) {
+// Mock version history for documents
+const getDocumentVersions = (doc: Document): DocumentWithVersions => {
+  const versions = [];
+  for (let v = 1; v <= doc.version; v++) {
+    versions.push({
+      version: v,
+      created_by: v === 1 ? doc.created_by : `user-${Math.floor(Math.random() * 5) + 1}`,
+      created_at: new Date(new Date(doc.created_at).getTime() - (doc.version - v) * 86400000).toISOString(),
+      changes: v === 1 ? 'Version initiale' : v === doc.version ? 'Dernière modification' : 'Mise à jour mineure',
+    });
+  }
+  return { ...doc, versions };
+};
+
+export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'history'>('details');
+  const [showUpload, setShowUpload] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentWithVersions | null>(null);
   
   const currentStepIdx = stepIndex(caseItem.current_step);
+  
+  const handleFilesUploaded = useCallback((files: UploadedFile[]) => {
+    const newDocuments: Document[] = files.map((file, index) => ({
+      id: `doc-new-${Date.now()}-${index}`,
+      case_id: caseItem.id,
+      name: file.name,
+      type: file.type.includes('image') ? 'annexe' : 'rapport',
+      content: '[Contenu du fichier importé]',
+      version: 1,
+      created_by: 'service-account',
+      created_at: new Date().toISOString(),
+      file_size: file.size,
+      mime_type: file.type,
+      preview_url: file.preview,
+    }));
+    
+    onDocumentsAdded?.(caseItem.id, newDocuments);
+    setShowUpload(false);
+    toast.success(`${newDocuments.length} document(s) ajouté(s) au dossier`);
+  }, [caseItem.id, onDocumentsAdded]);
+
+  const handleDocumentClick = useCallback((doc: Document) => {
+    setSelectedDocument(getDocumentVersions(doc));
+  }, []);
   
   return (
     <div className="flex flex-col h-full">
@@ -106,7 +153,7 @@ export function CaseView({ caseItem, onTransition }: CaseViewProps) {
       <div className="flex gap-1 p-2 border-b border-border">
         {[
           { id: 'details', label: 'Détails', icon: FileText },
-          { id: 'documents', label: 'Documents', icon: File },
+          { id: 'documents', label: `Documents (${caseItem.documents.length})`, icon: File },
           { id: 'history', label: 'Historique', icon: Clock },
         ].map(tab => (
           <button
@@ -195,27 +242,113 @@ export function CaseView({ caseItem, onTransition }: CaseViewProps) {
         )}
         
         {activeTab === 'documents' && (
-          <div className="space-y-2">
-            {caseItem.documents.map(doc => (
-              <motion.div
-                key={doc.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors cursor-pointer"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
-                    <File className="w-5 h-5 text-primary" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground">{doc.name}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {doc.type} • v{doc.version}
-                    </p>
-                  </div>
+          <div className="space-y-4">
+            {/* Upload Toggle */}
+            <AnimatePresence mode="wait">
+              {showUpload ? (
+                <motion.div
+                  key="upload"
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 'auto' }}
+                  exit={{ opacity: 0, height: 0 }}
+                >
+                  <DocumentUpload onFilesUploaded={handleFilesUploaded} />
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    className="w-full mt-2"
+                    onClick={() => setShowUpload(false)}
+                  >
+                    Annuler
+                  </Button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="button"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <Button 
+                    variant="outline" 
+                    className="w-full"
+                    onClick={() => setShowUpload(true)}
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Ajouter des documents
+                  </Button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+            
+            {/* Document List */}
+            <div className="space-y-2">
+              {caseItem.documents.length === 0 ? (
+                <div className="text-center py-8">
+                  <File className="w-12 h-12 text-muted-foreground/30 mx-auto mb-3" />
+                  <p className="text-sm text-muted-foreground">Aucun document</p>
                 </div>
-              </motion.div>
-            ))}
+              ) : (
+                caseItem.documents.map((doc, index) => (
+                  <motion.div
+                    key={doc.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="p-3 rounded-lg bg-secondary/30 hover:bg-secondary/50 transition-colors group"
+                  >
+                    <div className="flex items-center gap-3">
+                      {/* Preview Thumbnail */}
+                      {doc.preview_url ? (
+                        <div className="w-12 h-12 rounded-lg overflow-hidden bg-background shrink-0">
+                          <img 
+                            src={doc.preview_url} 
+                            alt={doc.name}
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
+                      ) : (
+                        <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                          <File className="w-6 h-6 text-primary" />
+                        </div>
+                      )}
+                      
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-foreground truncate">{doc.name}</p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs text-muted-foreground">{doc.type}</span>
+                          <span className="text-xs px-1.5 py-0.5 rounded bg-primary/10 text-primary font-mono">
+                            v{doc.version}
+                          </span>
+                          {doc.file_size && (
+                            <span className="text-xs text-muted-foreground">
+                              {(doc.file_size / 1024).toFixed(1)} KB
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      {/* Actions */}
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button 
+                          variant="ghost" 
+                          size="icon-sm"
+                          onClick={() => handleDocumentClick(doc)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="icon-sm"
+                          onClick={() => handleDocumentClick(doc)}
+                        >
+                          <History className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))
+              )}
+            </div>
           </div>
         )}
         
@@ -304,6 +437,13 @@ export function CaseView({ caseItem, onTransition }: CaseViewProps) {
           </Button>
         </div>
       )}
+      
+      {/* Document Preview Modal */}
+      <DocumentPreview
+        document={selectedDocument!}
+        isOpen={!!selectedDocument}
+        onClose={() => setSelectedDocument(null)}
+      />
     </div>
   );
 }
