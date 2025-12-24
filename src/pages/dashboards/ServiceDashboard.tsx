@@ -38,7 +38,8 @@ import {
   Sparkles,
   UsersRound,
   Menu,
-  Eye
+  Eye,
+  BellRing
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -66,8 +67,11 @@ import { TeamPerformancePanel } from '@/components/gamification/TeamPerformanceP
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { DetailedCallsView } from '@/components/comms-center/DetailedCallsView';
 import { DetailedConversationsView } from '@/components/comms-center/DetailedConversationsView';
+import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { AnimatedSection, staggerContainerVariants, staggerItemVariants } from '@/components/animations/PageTransition';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { useNotifications } from '@/hooks/useNotifications';
+import { usePushNotifications } from '@/hooks/usePushNotifications';
 import { useWeeklyRewards } from '@/hooks/useWeeklyRewards';
 import { useMonthlyQuests } from '@/hooks/useMonthlyQuests';
 import { useActionTracker } from '@/contexts/ActionTrackerContext';
@@ -167,10 +171,12 @@ export default function ServiceDashboard() {
   const globalSearch = useGlobalSearch();
   const dailyChallenges = useDailyChallenges();
   const notifications = useNotifications();
+  const pushNotifications = usePushNotifications();
   const weeklyRewards = useWeeklyRewards(addPoints);
   const monthlyQuests = useMonthlyQuests(addPoints);
   const actionTracker = useActionTracker();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotificationCenter, setShowNotificationCenter] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
@@ -181,6 +187,28 @@ export default function ServiceDashboard() {
   const [showTeamPerformance, setShowTeamPerformance] = useState(false);
   const [showDetailedCalls, setShowDetailedCalls] = useState(false);
   const [showDetailedConversations, setShowDetailedConversations] = useState(false);
+  
+  // Demo: trigger notifications for missed calls/messages
+  useEffect(() => {
+    // Simulate missed call notification after 10 seconds (for demo)
+    const missedCallTimer = setTimeout(() => {
+      if (hasCall && dashboardStats.missedCalls > 0) {
+        pushNotifications.notifyMissedCall('Marc Petit', 'BizPartner');
+      }
+    }, 10000);
+    
+    // Simulate unread message notification after 15 seconds (for demo)
+    const messageTimer = setTimeout(() => {
+      if (hasChat && dashboardStats.unreadMessages > 0) {
+        pushNotifications.notifyUnreadMessage('Jean Dupont', 'D\'accord, je regarde ça', '1');
+      }
+    }, 15000);
+    
+    return () => {
+      clearTimeout(missedCallTimer);
+      clearTimeout(messageTimer);
+    };
+  }, []);
   
   // Connect to realtime on mount
   useEffect(() => {
@@ -477,7 +505,23 @@ export default function ServiceDashboard() {
                     </Button>
                   </div>
                   
-                  {/* Notifications */}
+                  {/* Push Notifications */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={() => setShowNotificationCenter(true)}
+                    className="relative h-8 w-8 sm:h-9 sm:w-9"
+                    title="Centre de notifications"
+                  >
+                    <BellRing className="w-4 h-4" />
+                    {pushNotifications.unreadCount > 0 && (
+                      <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-destructive rounded-full text-[10px] sm:text-xs flex items-center justify-center text-destructive-foreground font-medium animate-pulse">
+                        {pushNotifications.unreadCount > 9 ? '9+' : pushNotifications.unreadCount}
+                      </span>
+                    )}
+                  </Button>
+                  
+                  {/* Realtime Events */}
                   <div className="relative">
                     <Button 
                       variant="ghost" 
@@ -487,7 +531,7 @@ export default function ServiceDashboard() {
                     >
                       <Bell className="w-4 h-4" />
                       {totalNotifications > 0 && (
-                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-destructive rounded-full text-[10px] sm:text-xs flex items-center justify-center text-destructive-foreground font-medium">
+                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-primary rounded-full text-[10px] sm:text-xs flex items-center justify-center text-primary-foreground font-medium">
                           {totalNotifications > 9 ? '9+' : totalNotifications}
                         </span>
                       )}
@@ -496,13 +540,14 @@ export default function ServiceDashboard() {
                     <AnimatePresence>
                       {showNotifications && (
                         <motion.div
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: 10 }}
-                          className="absolute right-0 top-12 w-72 sm:w-80 glass-strong rounded-xl border border-border/50 shadow-xl z-50"
+                          initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                          className="absolute right-0 top-12 w-72 sm:w-80 bg-card rounded-xl border border-border shadow-xl z-50"
                         >
-                          <div className="p-3 border-b border-border/50">
-                            <h4 className="font-medium text-foreground text-sm">Notifications temps réel</h4>
+                          <div className="p-3 border-b border-border">
+                            <h4 className="font-medium text-foreground text-sm">Événements temps réel</h4>
                             <p className="text-xs text-muted-foreground">
                               {recentEvents.length} événements récents
                             </p>
@@ -510,9 +555,12 @@ export default function ServiceDashboard() {
                           <ScrollArea className="h-64">
                             <div className="p-2 space-y-1">
                               {recentEvents.length > 0 ? (
-                                recentEvents.map((event) => (
-                                  <div
+                                recentEvents.map((event, index) => (
+                                  <motion.div
                                     key={event.event_id}
+                                    initial={{ opacity: 0, x: -10 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: index * 0.05 }}
                                     className="p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                                   >
                                     <div className="flex items-center gap-2">
@@ -532,7 +580,7 @@ export default function ServiceDashboard() {
                                         </p>
                                       </div>
                                     </div>
-                                  </div>
+                                  </motion.div>
                                 ))
                               ) : (
                                 <div className="p-4 text-center text-muted-foreground text-sm">
@@ -1244,6 +1292,12 @@ export default function ServiceDashboard() {
       <DetailedConversationsView
         isOpen={showDetailedConversations}
         onClose={() => setShowDetailedConversations(false)}
+      />
+      
+      {/* Notification Center */}
+      <NotificationCenter
+        isOpen={showNotificationCenter}
+        onClose={() => setShowNotificationCenter(false)}
       />
     </SidebarInset>
     </div>
