@@ -16,6 +16,7 @@ interface DemoContextType {
   apps: AppState[];
   networks: NetworkState[];
   demoAccounts: DemoAccount[];
+  customProfiles: DemoAccount[];
   
   // Actions
   switchProfile: (profileId: string) => void;
@@ -23,6 +24,9 @@ interface DemoContextType {
   updateAppModules: (appId: string, modules: Partial<Record<ModuleName, boolean>>) => void;
   updateNetworkPolicy: (networkId: string, modules: Partial<Record<ModuleName, boolean>>) => void;
   addAppToNetwork: (appId: string, networkId: string) => void;
+  createCustomProfile: (profile: Omit<DemoAccount, 'id'>) => DemoAccount;
+  deleteCustomProfile: (profileId: string) => void;
+  resetDemoState: () => void;
   
   // Admin checks
   isPlatformAdmin: boolean;
@@ -74,6 +78,18 @@ function calculateEffectiveModules(
 
 export function DemoProvider({ children }: { children: ReactNode }) {
   const [activeProfile, setActiveProfile] = useState<DemoAccount | null>(null);
+  const [customProfiles, setCustomProfiles] = useState<DemoAccount[]>(() => {
+    const stored = localStorage.getItem('comms.customProfiles');
+    if (stored) {
+      try {
+        return JSON.parse(stored);
+      } catch {
+        return [];
+      }
+    }
+    return [];
+  });
+  
   const [apps, setApps] = useState<AppState[]>(() => {
     const stored = localStorage.getItem('comms.demoApps');
     if (stored) {
@@ -100,16 +116,19 @@ export function DemoProvider({ children }: { children: ReactNode }) {
   
   const [effectiveModules, setEffectiveModules] = useState<EffectiveModule[]>([]);
   
+  // Combine built-in and custom profiles
+  const allProfiles = [...demoAccounts, ...customProfiles];
+  
   // Load profile on mount
   useEffect(() => {
     const storedProfileId = localStorage.getItem(STORAGE_KEY);
     if (storedProfileId) {
-      const profile = demoAccounts.find(p => p.id === storedProfileId);
+      const profile = allProfiles.find(p => p.id === storedProfileId);
       if (profile) {
         setActiveProfile(profile);
       }
     }
-  }, []);
+  }, [customProfiles]);
   
   // Recalculate effective modules when profile or networks change
   useEffect(() => {
@@ -125,8 +144,13 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     localStorage.setItem('comms.demoNetworks', JSON.stringify(networks));
   }, [networks]);
   
+  // Persist custom profiles
+  useEffect(() => {
+    localStorage.setItem('comms.customProfiles', JSON.stringify(customProfiles));
+  }, [customProfiles]);
+  
   const switchProfile = useCallback((profileId: string) => {
-    const profile = demoAccounts.find(p => p.id === profileId);
+    const profile = allProfiles.find(p => p.id === profileId);
     if (profile) {
       setActiveProfile(profile);
       localStorage.setItem(STORAGE_KEY, profileId);
@@ -150,7 +174,7 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('comms.delegated_realm');
       }
     }
-  }, []);
+  }, [allProfiles]);
   
   const clearProfile = useCallback(() => {
     setActiveProfile(null);
@@ -187,6 +211,34 @@ export function DemoProvider({ children }: { children: ReactNode }) {
     ));
   }, []);
   
+  const createCustomProfile = useCallback((profileData: Omit<DemoAccount, 'id'>): DemoAccount => {
+    const newProfile: DemoAccount = {
+      ...profileData,
+      id: `custom-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    };
+    setCustomProfiles(prev => [...prev, newProfile]);
+    return newProfile;
+  }, []);
+  
+  const deleteCustomProfile = useCallback((profileId: string) => {
+    setCustomProfiles(prev => prev.filter(p => p.id !== profileId));
+    if (activeProfile?.id === profileId) {
+      setActiveProfile(null);
+      localStorage.removeItem(STORAGE_KEY);
+    }
+  }, [activeProfile]);
+  
+  const resetDemoState = useCallback(() => {
+    setActiveProfile(null);
+    setCustomProfiles([]);
+    setApps(appsData as AppState[]);
+    setNetworks(networksData as NetworkState[]);
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem('comms.customProfiles');
+    localStorage.removeItem('comms.demoApps');
+    localStorage.removeItem('comms.demoNetworks');
+  }, []);
+  
   const isPlatformAdmin = activeProfile?.mode === 'platform_admin';
   const isTenantAdmin = activeProfile?.mode === 'tenant_admin';
   
@@ -197,12 +249,16 @@ export function DemoProvider({ children }: { children: ReactNode }) {
         effectiveModules,
         apps,
         networks,
-        demoAccounts,
+        demoAccounts: allProfiles,
+        customProfiles,
         switchProfile,
         clearProfile,
         updateAppModules,
         updateNetworkPolicy,
         addAppToNetwork,
+        createCustomProfile,
+        deleteCustomProfile,
+        resetDemoState,
         isPlatformAdmin,
         isTenantAdmin,
       }}
