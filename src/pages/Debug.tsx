@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { JwtInspector } from '@/components/debug/JwtInspector';
+import { PolicyDebugPanel } from '@/components/debug/PolicyDebugPanel';
 import { cn } from '@/lib/utils';
 
 export default function Debug() {
@@ -677,11 +678,24 @@ export default function Debug() {
             </pre>
           </motion.div>
           
-          {/* JWT Inspector */}
+          {/* Policy Debug Panel */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.6 }}
+            className="lg:col-span-2"
+          >
+            <PolicyDebugPanel 
+              currentRealm={appContext.delegated_realm || 'citizen'} 
+              networkType={appContext.network_type} 
+            />
+          </motion.div>
+          
+          {/* JWT Inspector */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
             className="lg:col-span-2"
           >
             <JwtInspector />
