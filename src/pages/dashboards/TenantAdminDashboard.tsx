@@ -207,7 +207,10 @@ function AppsList() {
   const [dbApps, setDbApps] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [showDeleted, setShowDeleted] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<string>('all');
   const [restoring, setRestoring] = useState<string | null>(null);
+  const [hardDeleting, setHardDeleting] = useState<string | null>(null);
+  const [appToDelete, setAppToDelete] = useState<Application | null>(null);
   
   const tenantId = payload?.tenant_id || 'demo-tenant';
 
@@ -254,21 +257,50 @@ function AppsList() {
     }
   };
 
+  const handleHardDelete = async (app: Application) => {
+    setHardDeleting(app.id);
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .delete()
+        .eq('id', app.id);
+
+      if (error) throw error;
+      toast.success('Application supprimée définitivement');
+      setAppToDelete(null);
+      fetchApps();
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setHardDeleting(null);
+    }
+  };
+
   // Combine mock apps with DB apps for demo
   const tenantApps = apps.filter(app => 
     app.tenant_id === payload?.tenant_id &&
     app.name.toLowerCase().includes(search.toLowerCase())
   );
 
-  // Filter DB apps based on search and deleted status
+  // Filter DB apps based on search, status filter, and deleted status
   const filteredDbApps = dbApps.filter(app => {
     const matchesSearch = app.name.toLowerCase().includes(search.toLowerCase());
     const matchesDeletedFilter = showDeleted || app.status !== 'deleted';
-    return matchesSearch && matchesDeletedFilter;
+    const matchesStatusFilter = statusFilter === 'all' || 
+      (statusFilter === 'deleted' ? app.status === 'deleted' : app.status === statusFilter);
+    return matchesSearch && matchesDeletedFilter && matchesStatusFilter;
   });
 
-  // Count deleted apps for badge
+  // Count apps by status for badges
   const deletedCount = dbApps.filter(app => app.status === 'deleted').length;
+  const statusCounts = {
+    all: dbApps.filter(app => showDeleted || app.status !== 'deleted').length,
+    active: dbApps.filter(app => app.status === 'active').length,
+    inactive: dbApps.filter(app => app.status === 'inactive').length,
+    suspended: dbApps.filter(app => app.status === 'suspended').length,
+    deleted: deletedCount
+  };
 
   const allApps = [...filteredDbApps, ...tenantApps.map(app => ({
     id: app.app_id,
@@ -286,10 +318,37 @@ function AppsList() {
     }))
   }))];
 
+  const statusOptions = [
+    { value: 'all', label: 'Tous', count: statusCounts.all },
+    { value: 'active', label: 'Actif', count: statusCounts.active },
+    { value: 'inactive', label: 'Inactif', count: statusCounts.inactive },
+    { value: 'suspended', label: 'Suspendu', count: statusCounts.suspended },
+  ];
+
+  const getStatusLabel = (status: string) => {
+    switch(status) {
+      case 'active': return 'Actif';
+      case 'inactive': return 'Inactif';
+      case 'suspended': return 'Suspendu';
+      case 'deleted': return 'Archivé';
+      default: return status;
+    }
+  };
+
+  const getStatusVariant = (status: string) => {
+    switch(status) {
+      case 'active': return 'default' as const;
+      case 'deleted': return 'destructive' as const;
+      case 'suspended': return 'outline' as const;
+      default: return 'secondary' as const;
+    }
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
+      {/* Filters Row */}
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <div className="flex flex-wrap items-center gap-3">
           <div className="relative w-64">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input 
@@ -300,12 +359,40 @@ function AppsList() {
             />
           </div>
           
+          {/* Status Filter */}
+          <div className="flex items-center gap-1 p-1 bg-muted/50 rounded-lg">
+            {statusOptions.map((option) => (
+              <Button
+                key={option.value}
+                variant={statusFilter === option.value ? "secondary" : "ghost"}
+                size="sm"
+                onClick={() => setStatusFilter(option.value)}
+                className="gap-1.5 h-8"
+              >
+                {option.label}
+                {option.count > 0 && (
+                  <span className={cn(
+                    "text-xs px-1.5 py-0.5 rounded-full",
+                    statusFilter === option.value 
+                      ? "bg-background text-foreground" 
+                      : "bg-muted-foreground/20 text-muted-foreground"
+                  )}>
+                    {option.count}
+                  </span>
+                )}
+              </Button>
+            ))}
+          </div>
+          
           {/* Toggle to show deleted apps */}
           {deletedCount > 0 && (
             <Button 
               variant={showDeleted ? "secondary" : "outline"} 
               size="sm"
-              onClick={() => setShowDeleted(!showDeleted)}
+              onClick={() => {
+                setShowDeleted(!showDeleted);
+                if (!showDeleted) setStatusFilter('all');
+              }}
               className="gap-2"
             >
               {showDeleted ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
@@ -374,33 +461,36 @@ function AppsList() {
                   )}
                   
                   <div className="flex items-center gap-3">
-                    <Badge 
-                      variant={
-                        app.status === 'active' ? 'default' : 
-                        app.status === 'deleted' ? 'destructive' : 
-                        'secondary'
-                      }
-                    >
-                      {app.status === 'active' ? 'Actif' : 
-                       app.status === 'deleted' ? 'Archivé' : 
-                       'Désactivé'}
+                    <Badge variant={getStatusVariant(app.status)}>
+                      {getStatusLabel(app.status)}
                     </Badge>
                     
                     {isDeleted ? (
-                      <Button 
-                        variant="outline" 
-                        size="sm"
-                        onClick={() => handleRestore(app.id)}
-                        disabled={restoring === app.id}
-                        className="gap-2"
-                      >
-                        {restoring === app.id ? (
-                          <RefreshCw className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <RotateCcw className="w-4 h-4" />
-                        )}
-                        Restaurer
-                      </Button>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleRestore(app.id)}
+                          disabled={restoring === app.id}
+                          className="gap-2"
+                        >
+                          {restoring === app.id ? (
+                            <RefreshCw className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <RotateCcw className="w-4 h-4" />
+                          )}
+                          Restaurer
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={() => setAppToDelete(app as Application)}
+                          className="gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Supprimer
+                        </Button>
+                      </div>
                     ) : (
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -453,6 +543,7 @@ function AppsList() {
           <Card className="bg-card/50 border-border/50">
             <CardContent className="py-12 text-center text-muted-foreground">
               {loading ? 'Chargement...' : 
+               statusFilter !== 'all' ? `Aucune application ${getStatusLabel(statusFilter).toLowerCase()} trouvée` :
                showDeleted ? 'Aucune application trouvée' : 
                'Aucune application active trouvée'}
             </CardContent>
@@ -466,6 +557,34 @@ function AppsList() {
         tenantId={tenantId}
         onSuccess={fetchApps}
       />
+
+      {/* Hard Delete Confirmation Dialog */}
+      <AlertDialog open={!!appToDelete} onOpenChange={() => setAppToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Suppression définitive
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Vous êtes sur le point de supprimer définitivement l'application <strong>{appToDelete?.name}</strong>.
+              <br /><br />
+              Cette action est <strong>irréversible</strong>. Toutes les données associées seront perdues.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!hardDeleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => appToDelete && handleHardDelete(appToDelete)}
+              disabled={!!hardDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {hardDeleting && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+              Supprimer définitivement
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
