@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { 
   User, Shield, LogOut, Users, Key, Settings, 
   ChevronDown, Building2, Network, Globe, Home
@@ -24,13 +25,6 @@ const modeIcons = {
   delegated: User,
 };
 
-const modeLabels = {
-  platform_admin: 'Platform Admin',
-  tenant_admin: 'Tenant Admin',
-  service: 'Service Account',
-  delegated: 'Delegated Actor',
-};
-
 const modeColors = {
   platform_admin: 'text-amber-400 bg-amber-500/20',
   tenant_admin: 'text-blue-400 bg-blue-500/20',
@@ -40,12 +34,13 @@ const modeColors = {
 
 export function UserMenu() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { payload, activeProfile, logout, expiresIn } = useAuth();
   
   if (!payload) return null;
   
   const ModeIcon = modeIcons[payload.mode as keyof typeof modeIcons] || User;
-  const modeLabel = modeLabels[payload.mode as keyof typeof modeLabels] || payload.mode;
+  const modeLabel = t(`modes.${payload.mode}`) || payload.mode;
   const modeColor = modeColors[payload.mode as keyof typeof modeColors] || 'text-primary bg-primary/20';
   
   const handleLogout = () => {
@@ -105,7 +100,7 @@ export function UserMenu() {
                 {modeLabel}
               </p>
               <Badge variant="outline" className="mt-1 text-[10px] h-5">
-                Expire dans {formatExpiry(expiresIn)}
+                {t('userMenu.expiresIn')} {formatExpiry(expiresIn)}
               </Badge>
             </div>
           </div>
@@ -115,14 +110,14 @@ export function UserMenu() {
         
         {/* Session Details */}
         <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-normal">
-          Session
+          {t('userMenu.session')}
         </DropdownMenuLabel>
         
         <div className="px-3 py-2 space-y-2">
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5">
               <Key className="w-3 h-3" />
-              App ID
+              {t('userMenu.appId')}
             </span>
             <code className="font-mono text-foreground bg-muted px-1.5 py-0.5 rounded text-[10px]">
               {payload.app_id}
@@ -132,7 +127,7 @@ export function UserMenu() {
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5">
               <Building2 className="w-3 h-3" />
-              Tenant
+              {t('userMenu.tenant')}
             </span>
             <code className="font-mono text-foreground bg-muted px-1.5 py-0.5 rounded text-[10px]">
               {payload.tenant_id}
@@ -142,20 +137,20 @@ export function UserMenu() {
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5">
               <Network className="w-3 h-3" />
-              Network
+              {t('userMenu.network')}
             </span>
             <Badge variant={payload.network_type === 'government' ? 'default' : 'secondary'} className="text-[10px] h-5">
-              {payload.network_type}
+              {t(`networkTypes.${payload.network_type}`)}
             </Badge>
           </div>
           
           <div className="flex items-center justify-between text-xs">
             <span className="text-muted-foreground flex items-center gap-1.5">
               <Globe className="w-3 h-3" />
-              Realm
+              {t('userMenu.realm')}
             </span>
             <Badge variant="outline" className="text-[10px] h-5 capitalize">
-              {payload.realm}
+              {t(`realms.${payload.realm}`)}
             </Badge>
           </div>
         </div>
@@ -164,7 +159,7 @@ export function UserMenu() {
         
         {/* Scopes Preview */}
         <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground font-normal">
-          Scopes ({payload.scopes.length})
+          {t('userMenu.scopes')} ({payload.scopes.length})
         </DropdownMenuLabel>
         
         <div className="px-3 py-2">
@@ -179,7 +174,7 @@ export function UserMenu() {
             ))}
             {payload.scopes.length > 8 && (
               <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground text-[10px]">
-                +{payload.scopes.length - 8} more
+                +{payload.scopes.length - 8} {t('userMenu.more')}
               </span>
             )}
           </div>
@@ -191,12 +186,12 @@ export function UserMenu() {
         <DropdownMenuGroup>
           <DropdownMenuItem onClick={() => navigate('/debug')} className="cursor-pointer">
             <Settings className="w-4 h-4 mr-2" />
-            Inspecteur JWT
+            {t('nav.jwtInspector')}
           </DropdownMenuItem>
           
           <DropdownMenuItem onClick={handleSwitchAccount} className="cursor-pointer">
             <Users className="w-4 h-4 mr-2" />
-            Changer de compte
+            {t('nav.switchAccount')}
           </DropdownMenuItem>
         </DropdownMenuGroup>
         
@@ -207,7 +202,7 @@ export function UserMenu() {
           className="cursor-pointer"
         >
           <Home className="w-4 h-4 mr-2" />
-          Retour à l'accueil
+          {t('nav.backToHome')}
         </DropdownMenuItem>
         
         <DropdownMenuItem 
@@ -215,7 +210,7 @@ export function UserMenu() {
           className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
         >
           <LogOut className="w-4 h-4 mr-2" />
-          Déconnexion
+          {t('nav.logout')}
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

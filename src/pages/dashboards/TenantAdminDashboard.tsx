@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Building, AppWindow, Settings, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,7 +13,7 @@ import { UserMenu } from '@/components/layout/UserMenu';
 import { cn } from '@/lib/utils';
 
 export default function TenantAdminDashboard() {
-  const navigate = useNavigate();
+  const { t } = useTranslation();
   const { payload } = useAuth();
   const { apps } = useDemo();
   const [activeTab, setActiveTab] = useState('apps');
@@ -37,7 +38,7 @@ export default function TenantAdminDashboard() {
                   <Building className="w-5 h-5 text-blue-400" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">Tenant Admin</h1>
+                  <h1 className="text-xl font-bold text-foreground">{t('dashboard.tenantAdmin.title')}</h1>
                   <p className="text-xs text-muted-foreground">{payload?.tenant_id}</p>
                 </div>
               </div>
@@ -53,22 +54,22 @@ export default function TenantAdminDashboard() {
           <TabsList className="mb-6">
             <TabsTrigger value="apps" className="gap-2">
               <AppWindow className="w-4 h-4" />
-              Mes Applications
+              {t('dashboard.tenantAdmin.myApps')}
             </TabsTrigger>
             <TabsTrigger value="modules" className="gap-2">
               <Settings className="w-4 h-4" />
-              Modules
+              {t('dashboard.tenantAdmin.modules')}
             </TabsTrigger>
             <TabsTrigger value="audit" className="gap-2">
               <Activity className="w-4 h-4" />
-              Activité
+              {t('dashboard.tenantAdmin.activity')}
             </TabsTrigger>
           </TabsList>
           
           {/* Apps */}
           <TabsContent value="apps">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">Applications du tenant</h2>
+              <h2 className="text-lg font-semibold mb-6">{t('dashboard.tenantAdmin.tenantApps')}</h2>
               
               <div className="grid gap-4">
                 {tenantApps.length > 0 ? tenantApps.map((app) => (
@@ -85,7 +86,7 @@ export default function TenantAdminDashboard() {
                       </div>
                       
                       <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
-                        {app.status}
+                        {app.status === 'active' ? t('common.active') : t('common.disabled')}
                       </Badge>
                     </div>
                     
@@ -105,7 +106,7 @@ export default function TenantAdminDashboard() {
                   </div>
                 )) : (
                   <div className="text-center py-12 text-muted-foreground">
-                    Aucune application pour ce tenant
+                    {t('dashboard.tenantAdmin.noApps')}
                   </div>
                 )}
               </div>
@@ -115,7 +116,7 @@ export default function TenantAdminDashboard() {
           {/* Modules */}
           <TabsContent value="modules">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">Configuration des modules</h2>
+              <h2 className="text-lg font-semibold mb-6">{t('dashboard.tenantAdmin.modulesConfig')}</h2>
               
               <div className="glass rounded-xl p-6 space-y-4">
                 {['icom', 'iboite', 'iasted', 'icorrespondance'].map((module) => (
@@ -123,7 +124,7 @@ export default function TenantAdminDashboard() {
                     <div>
                       <h4 className="font-medium text-foreground capitalize">{module}</h4>
                       <p className="text-xs text-muted-foreground">
-                        {module === 'icorrespondance' ? 'Courrier administratif' : 'Communication standard'}
+                        {module === 'icorrespondance' ? t('dashboard.tenantAdmin.adminMail') : t('dashboard.tenantAdmin.standardComm')}
                       </p>
                     </div>
                     <Switch defaultChecked={module !== 'icorrespondance'} />
@@ -136,14 +137,14 @@ export default function TenantAdminDashboard() {
           {/* Audit */}
           <TabsContent value="audit">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">Activité récente</h2>
+              <h2 className="text-lg font-semibold mb-6">{t('dashboard.tenantAdmin.recentActivity')}</h2>
               
               <div className="glass rounded-xl p-4">
                 <div className="space-y-3">
                   {[
-                    { time: '10:42:15', action: 'Module activé', details: 'iAsted', app: 'gov-app-1' },
-                    { time: '10:41:30', action: 'Message envoyé', details: 'iCom', app: 'gov-app-1' },
-                    { time: '10:40:12', action: 'Thread créé', details: 'iBoîte', app: 'gov-app-1' },
+                    { time: '10:42:15', action: t('audit.moduleEnabled'), details: 'iAsted', app: 'gov-app-1' },
+                    { time: '10:41:30', action: t('audit.messageSent'), details: 'iCom', app: 'gov-app-1' },
+                    { time: '10:40:12', action: t('audit.threadCreated'), details: 'iBoîte', app: 'gov-app-1' },
                   ].map((log, i) => (
                     <div key={i} className="flex items-center gap-4 text-sm py-2 border-b border-border last:border-0">
                       <span className="text-muted-foreground font-mono text-xs w-20">{log.time}</span>

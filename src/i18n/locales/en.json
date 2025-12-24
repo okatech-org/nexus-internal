@@ -18,12 +18,92 @@
     "yes": "Yes",
     "no": "No",
     "enabled": "Enabled",
-    "disabled": "Disabled"
+    "disabled": "Disabled",
+    "active": "Active",
+    "connected": "Connected"
   },
   "nav": {
     "home": "Home",
     "debug": "Debug",
-    "simulator": "Simulator"
+    "simulator": "Simulator",
+    "login": "Login",
+    "logout": "Logout",
+    "backToHome": "Back to Home",
+    "switchAccount": "Switch Account",
+    "jwtInspector": "JWT Inspector",
+    "demoMode": "Demo Mode"
+  },
+  "userMenu": {
+    "session": "Session",
+    "appId": "App ID",
+    "tenant": "Tenant",
+    "network": "Network",
+    "realm": "Realm",
+    "scopes": "Scopes",
+    "expiresIn": "Expires in",
+    "more": "more"
+  },
+  "dashboard": {
+    "platformAdmin": {
+      "title": "Platform Admin",
+      "subtitle": "Okatech Console",
+      "appsRegistry": "Apps Registry",
+      "networks": "Networks",
+      "modules": "Modules",
+      "audit": "Audit",
+      "registeredApps": "Registered Applications",
+      "newApp": "New App",
+      "newNetwork": "New Network",
+      "modulesConfig": "Modules Configuration",
+      "availableForAll": "Available for all networks",
+      "govOnly": "Available only for government networks",
+      "restrictedToGov": "Restricted to realm=government",
+      "auditLog": "Audit Log",
+      "memberApps": "Member Apps"
+    },
+    "tenantAdmin": {
+      "title": "Tenant Admin",
+      "myApps": "My Applications",
+      "modules": "Modules",
+      "activity": "Activity",
+      "tenantApps": "Tenant Applications",
+      "noApps": "No applications for this tenant",
+      "modulesConfig": "Modules Configuration",
+      "adminMail": "Administrative Mail",
+      "standardComm": "Standard Communication",
+      "recentActivity": "Recent Activity"
+    },
+    "service": {
+      "title": "Service Dashboard",
+      "activeSession": "Active Session",
+      "openCommsCenter": "Open Communications Center",
+      "availableModules": "Available Modules",
+      "realtimeChat": "Realtime Chat",
+      "internalInbox": "Internal Inbox",
+      "aiAssistant": "AI Assistant",
+      "adminMail": "Administrative Mail",
+      "notAvailable": "Not Available"
+    },
+    "delegated": {
+      "title": "My Space",
+      "welcome": "Welcome",
+      "accessComms": "Access your communications and services from this space.",
+      "quickActions": "Quick Actions",
+      "newConversation": "New Conversation",
+      "viewMessages": "View Messages",
+      "askHelp": "Ask for Help",
+      "yourServices": "Your Services",
+      "messages": "Messages",
+      "liveConversations": "Live Conversations",
+      "inbox": "Inbox",
+      "internalMail": "Internal Mail",
+      "assistant": "Assistant",
+      "smartHelp": "Smart Help",
+      "officialMail": "Official Mail",
+      "adminDocs": "Administrative Documents",
+      "new": "new",
+      "servicesNotAvailable": "Some services are not available for your profile."
+    }
   },
   "quickDemo": {
     "title": "Quick Demo",
@@ -120,6 +200,7 @@
   },
   "modes": {
     "platform_admin": "Platform Admin",
+    "tenant_admin": "Tenant Admin",
     "service": "Service",
     "delegated": "Delegated"
   },
@@ -128,5 +209,13 @@
     "business": "Business",
     "citizen": "Citizen",
     "platform": "Platform"
+  },
+  "audit": {
+    "appRegistered": "App registered",
+    "networkCreated": "Network created",
+    "moduleEnabled": "Module enabled",
+    "sessionStarted": "Session started",
+    "messageSent": "Message sent",
+    "threadCreated": "Thread created"
   }
 }

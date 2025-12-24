@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Crown, AppWindow, Network, Layers, 
@@ -15,6 +16,7 @@ import { cn } from '@/lib/utils';
 
 export default function PlatformAdminDashboard() {
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const { isPlatformAdmin } = useAuth();
   const { apps, networks } = useDemo();
   const [activeTab, setActiveTab] = useState('apps');
@@ -42,8 +44,8 @@ export default function PlatformAdminDashboard() {
                   <Crown className="w-5 h-5 text-amber-400" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">Platform Admin</h1>
-                  <p className="text-xs text-muted-foreground">Okatech Console</p>
+                  <h1 className="text-xl font-bold text-foreground">{t('dashboard.platformAdmin.title')}</h1>
+                  <p className="text-xs text-muted-foreground">{t('dashboard.platformAdmin.subtitle')}</p>
                 </div>
               </div>
             </div>
@@ -58,19 +60,19 @@ export default function PlatformAdminDashboard() {
           <TabsList className="mb-6">
             <TabsTrigger value="apps" className="gap-2">
               <AppWindow className="w-4 h-4" />
-              Apps Registry
+              {t('dashboard.platformAdmin.appsRegistry')}
             </TabsTrigger>
             <TabsTrigger value="networks" className="gap-2">
               <Network className="w-4 h-4" />
-              Networks
+              {t('dashboard.platformAdmin.networks')}
             </TabsTrigger>
             <TabsTrigger value="modules" className="gap-2">
               <Layers className="w-4 h-4" />
-              Modules
+              {t('dashboard.platformAdmin.modules')}
             </TabsTrigger>
             <TabsTrigger value="audit" className="gap-2">
               <Activity className="w-4 h-4" />
-              Audit
+              {t('dashboard.platformAdmin.audit')}
             </TabsTrigger>
           </TabsList>
           
@@ -78,10 +80,10 @@ export default function PlatformAdminDashboard() {
           <TabsContent value="apps">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Applications enregistrées</h2>
+                <h2 className="text-lg font-semibold">{t('dashboard.platformAdmin.registeredApps')}</h2>
                 <Button size="sm" className="gap-2">
                   <Plus className="w-4 h-4" />
-                  Nouvelle App
+                  {t('dashboard.platformAdmin.newApp')}
                 </Button>
               </div>
               
@@ -101,7 +103,7 @@ export default function PlatformAdminDashboard() {
                       
                       <div className="flex items-center gap-4">
                         <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
-                          {app.status}
+                          {app.status === 'active' ? t('common.active') : t('common.disabled')}
                         </Badge>
                         <span className="text-xs text-muted-foreground">{app.tenant_id}</span>
                       </div>
@@ -130,10 +132,10 @@ export default function PlatformAdminDashboard() {
           <TabsContent value="networks">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-lg font-semibold">Réseaux</h2>
+                <h2 className="text-lg font-semibold">{t('dashboard.platformAdmin.networks')}</h2>
                 <Button size="sm" className="gap-2">
                   <Plus className="w-4 h-4" />
-                  Nouveau Réseau
+                  {t('dashboard.platformAdmin.newNetwork')}
                 </Button>
               </div>
               
@@ -158,11 +160,11 @@ export default function PlatformAdminDashboard() {
                     
                     <div className="flex items-center justify-between text-sm mb-3">
                       <span className="text-muted-foreground">Type</span>
-                      <Badge variant="outline">{network.network_type}</Badge>
+                      <Badge variant="outline">{t(`networkTypes.${network.network_type}`)}</Badge>
                     </div>
                     
                     <div className="text-sm mb-2">
-                      <span className="text-muted-foreground">Apps membres:</span>
+                      <span className="text-muted-foreground">{t('dashboard.platformAdmin.memberApps')}:</span>
                       <span className="ml-2 text-foreground">{network.member_apps.length}</span>
                     </div>
                     
@@ -182,25 +184,25 @@ export default function PlatformAdminDashboard() {
           {/* Modules */}
           <TabsContent value="modules">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">Configuration des Modules</h2>
+              <h2 className="text-lg font-semibold mb-6">{t('dashboard.platformAdmin.modulesConfig')}</h2>
               
               <div className="grid gap-4 md:grid-cols-2">
                 {['icom', 'iboite', 'iasted', 'icorrespondance'].map((module) => (
                   <div key={module} className="glass rounded-xl p-4">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="font-medium text-foreground capitalize">{module}</h3>
-                      <Badge variant="default">Actif</Badge>
+                      <Badge variant="default">{t('common.active')}</Badge>
                     </div>
                     
                     <p className="text-sm text-muted-foreground mb-4">
                       {module === 'icorrespondance' 
-                        ? 'Disponible uniquement pour les réseaux government' 
-                        : 'Disponible pour tous les réseaux'}
+                        ? t('dashboard.platformAdmin.govOnly')
+                        : t('dashboard.platformAdmin.availableForAll')}
                     </p>
                     
                     {module === 'icorrespondance' && (
                       <div className="p-2 rounded bg-warning/10 text-warning text-xs">
-                        ⚠️ Restreint aux realm=government
+                        ⚠️ {t('dashboard.platformAdmin.restrictedToGov')}
                       </div>
                     )}
                   </div>
@@ -212,15 +214,15 @@ export default function PlatformAdminDashboard() {
           {/* Audit */}
           <TabsContent value="audit">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">Journal d'audit</h2>
+              <h2 className="text-lg font-semibold mb-6">{t('dashboard.platformAdmin.auditLog')}</h2>
               
               <div className="glass rounded-xl p-4">
                 <div className="space-y-3">
                   {[
-                    { time: '10:42:15', action: 'App registered', details: 'gov-app-1', user: 'platform-admin' },
-                    { time: '10:41:30', action: 'Network created', details: 'gov-net-1', user: 'platform-admin' },
-                    { time: '10:40:12', action: 'Module enabled', details: 'icom for gov-app-1', user: 'platform-admin' },
-                    { time: '10:38:45', action: 'Session started', details: 'Platform Admin', user: 'platform-admin' },
+                    { time: '10:42:15', action: t('audit.appRegistered'), details: 'gov-app-1', user: 'platform-admin' },
+                    { time: '10:41:30', action: t('audit.networkCreated'), details: 'gov-net-1', user: 'platform-admin' },
+                    { time: '10:40:12', action: t('audit.moduleEnabled'), details: 'icom for gov-app-1', user: 'platform-admin' },
+                    { time: '10:38:45', action: t('audit.sessionStarted'), details: 'Platform Admin', user: 'platform-admin' },
                   ].map((log, i) => (
                     <div key={i} className="flex items-center gap-4 text-sm py-2 border-b border-border last:border-0">
                       <span className="text-muted-foreground font-mono text-xs w-20">{log.time}</span>
