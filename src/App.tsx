@@ -58,7 +58,7 @@ const App = () => (
                 } />
                 
                 {/* Admin Dashboards */}
-                <Route path="/admin/platform" element={
+                <Route path="/admin/platform/*" element={
                   <AuthGuard requiredScopes={['platform:*']}>
                     <PlatformAdminDashboard />
                   </AuthGuard>
