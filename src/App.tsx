@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CommsProvider } from "./contexts/CommsContext";
 import { DemoProvider } from "./contexts/DemoContext";
 import { AuthProvider } from "./contexts/AuthContext";
+import { ActionTrackerProvider } from "./contexts/ActionTrackerContext";
 import { AuthGuard } from "./components/auth/AuthGuard";
 
 // Pages
@@ -33,6 +34,7 @@ const App = () => (
         <AuthProvider>
           <DemoProvider>
             <CommsProvider>
+              <ActionTrackerProvider>
               <Toaster />
               <Sonner />
               <Routes>
@@ -89,6 +91,7 @@ const App = () => (
                 {/* Catch-all */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
+              </ActionTrackerProvider>
             </CommsProvider>
           </DemoProvider>
         </AuthProvider>
