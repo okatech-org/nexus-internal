@@ -29,12 +29,18 @@ import {
   PlatformEvent,
   PlatformMessage,
   PlatformConversation,
+  PlatformThread,
+  PlatformThreadMessage,
   subscribeToEvents,
   resetStore,
   createConversation,
   sendMessage,
   getConversations,
   getMessages,
+  createThread,
+  sendThreadMessage,
+  getThreads,
+  getThreadMessages,
 } from '@/lib/mockPlatform/store';
 
 const demoAccounts: DemoAccount[] = demoAccountsData as DemoAccount[];
@@ -75,10 +81,19 @@ interface AppPanelProps {
 }
 
 function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: AppPanelProps) {
+  // iCom state
   const [conversations, setConversations] = useState<PlatformConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<string | null>(null);
   const [messages, setMessages] = useState<PlatformMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
+  
+  // iBoîte state
+  const [threads, setThreads] = useState<PlatformThread[]>([]);
+  const [selectedThread, setSelectedThread] = useState<string | null>(null);
+  const [threadMessages, setThreadMessages] = useState<PlatformThreadMessage[]>([]);
+  const [newThreadMessage, setNewThreadMessage] = useState('');
+  const [newThreadSubject, setNewThreadSubject] = useState('');
+  
   const [activeTab, setActiveTab] = useState('icom');
   
   const effectiveModules = calculateEffectiveModules(profile);
@@ -98,15 +113,25 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
         }
       } else if (event.type === 'icom.conversation.created') {
         loadConversations();
+      } else if (event.type === 'iboite.message.created') {
+        const msg = event.payload as PlatformThreadMessage;
+        if (msg.thread_id === selectedThread) {
+          setThreadMessages(prev => [...prev, msg]);
+        }
+      } else if (event.type === 'iboite.thread.created') {
+        loadThreads();
       } else if (event.type === 'store.reset') {
         setConversations([]);
         setMessages([]);
         setSelectedConversation(null);
+        setThreads([]);
+        setThreadMessages([]);
+        setSelectedThread(null);
       }
     });
     
     return unsubscribe;
-  }, [panelId, profile, selectedConversation]);
+  }, [panelId, profile, selectedConversation, selectedThread]);
   
   // Load conversations when profile changes
   const loadConversations = useCallback(() => {
@@ -115,9 +140,17 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
     setConversations(convs);
   }, [profile]);
   
+  // Load threads when profile changes
+  const loadThreads = useCallback(() => {
+    if (!profile) return;
+    const ths = getThreads(profile.tenant_id, profile.network || '');
+    setThreads(ths);
+  }, [profile]);
+  
   useEffect(() => {
     loadConversations();
-  }, [loadConversations]);
+    loadThreads();
+  }, [loadConversations, loadThreads]);
   
   // Load messages when conversation changes
   useEffect(() => {
@@ -127,6 +160,15 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
       setMessages([]);
     }
   }, [selectedConversation]);
+  
+  // Load thread messages when thread changes
+  useEffect(() => {
+    if (selectedThread) {
+      setThreadMessages(getThreadMessages(selectedThread));
+    } else {
+      setThreadMessages([]);
+    }
+  }, [selectedThread]);
   
   const handleCreateConversation = () => {
     if (!profile || !otherProfile) {
@@ -165,7 +207,53 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
     setNewMessage('');
   };
   
+  const handleCreateThread = () => {
+    if (!profile || !otherProfile) {
+      toast.error('Need both apps to be configured in same network');
+      return;
+    }
+    
+    if (profile.tenant_id !== otherProfile.tenant_id || profile.network !== otherProfile.network) {
+      toast.error('Apps must be in the same tenant and network');
+      return;
+    }
+    
+    if (!newThreadSubject.trim()) {
+      toast.error('Please enter a thread subject');
+      return;
+    }
+    
+    const thread = createThread(
+      profile.tenant_id,
+      profile.network || '',
+      newThreadSubject.trim(),
+      [
+        { app_id: profile.app_id, actor_id: profile.actor_id },
+        { app_id: otherProfile.app_id, actor_id: otherProfile.actor_id },
+      ],
+      profile.app_id
+    );
+    
+    setSelectedThread(thread.id);
+    setNewThreadSubject('');
+    toast.success('Thread created');
+  };
+  
+  const handleSendThreadMessage = () => {
+    if (!profile || !selectedThread || !newThreadMessage.trim()) return;
+    
+    sendThreadMessage(
+      selectedThread,
+      profile.app_id,
+      profile.actor_id,
+      newThreadMessage.trim()
+    );
+    
+    setNewThreadMessage('');
+  };
+  
   const iComEnabled = effectiveModules.find(m => m.name === 'icom')?.enabled ?? false;
+  const iBoiteEnabled = effectiveModules.find(m => m.name === 'iboite')?.enabled ?? false;
   const iCorrespondanceModule = effectiveModules.find(m => m.name === 'icorrespondance');
   
   return (
@@ -241,7 +329,7 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
               <MessageCircle className="w-3 h-3 mr-1" />
               iCom
             </TabsTrigger>
-            <TabsTrigger value="iboite">
+            <TabsTrigger value="iboite" disabled={!iBoiteEnabled}>
               <Inbox className="w-3 h-3 mr-1" />
               iBoîte
             </TabsTrigger>
@@ -351,10 +439,108 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
             )}
           </TabsContent>
           
-          <TabsContent value="iboite" className="flex-1 m-0 px-4 pb-4">
-            <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-              iBoîte simulation coming soon
-            </div>
+          <TabsContent value="iboite" className="flex-1 flex flex-col m-0 px-4 pb-4 overflow-hidden">
+            {iBoiteEnabled ? (
+              <>
+                {/* Create Thread */}
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-muted-foreground">Threads</span>
+                  <div className="flex-1 flex gap-1">
+                    <Input
+                      value={newThreadSubject}
+                      onChange={e => setNewThreadSubject(e.target.value)}
+                      placeholder="New thread subject..."
+                      className="text-xs h-7"
+                      onKeyDown={e => e.key === 'Enter' && handleCreateThread()}
+                    />
+                    <Button 
+                      variant="ghost" 
+                      size="icon-sm"
+                      onClick={handleCreateThread}
+                      disabled={!otherProfile || !newThreadSubject.trim()}
+                      title="Create thread with other app"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
+                </div>
+                
+                {threads.length === 0 ? (
+                  <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+                    No threads. Enter a subject and click + to start one.
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex gap-1 mb-2 overflow-x-auto pb-1">
+                      {threads.map(thread => (
+                        <Button
+                          key={thread.id}
+                          variant={selectedThread === thread.id ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setSelectedThread(thread.id)}
+                          className="shrink-0 text-xs"
+                          title={thread.subject}
+                        >
+                          {thread.subject.slice(0, 15)}{thread.subject.length > 15 ? '...' : ''}
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    {/* Thread Messages */}
+                    <ScrollArea className="flex-1 border rounded-lg p-2 mb-2">
+                      {threadMessages.length === 0 ? (
+                        <div className="text-xs text-muted-foreground text-center py-4">
+                          No messages yet
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {threadMessages.map(msg => {
+                            const isOwn = msg.sender_app_id === profile?.app_id;
+                            return (
+                              <div
+                                key={msg.id}
+                                className={cn(
+                                  "text-xs p-2 rounded-lg max-w-[80%]",
+                                  isOwn 
+                                    ? "bg-primary/20 ml-auto text-right" 
+                                    : "bg-secondary"
+                                )}
+                              >
+                                <div className="font-mono text-[10px] text-muted-foreground mb-0.5">
+                                  {msg.sender_app_id}
+                                  {msg.sender_actor_id && ` (${msg.sender_actor_id})`}
+                                </div>
+                                <div>{msg.content}</div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </ScrollArea>
+                    
+                    {/* Input */}
+                    {selectedThread && (
+                      <div className="flex gap-2">
+                        <Input
+                          value={newThreadMessage}
+                          onChange={e => setNewThreadMessage(e.target.value)}
+                          placeholder="Reply to thread..."
+                          className="text-sm"
+                          onKeyDown={e => e.key === 'Enter' && handleSendThreadMessage()}
+                        />
+                        <Button size="icon" onClick={handleSendThreadMessage}>
+                          <Send className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
+                  </>
+                )}
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-sm text-muted-foreground">
+                iBoîte disabled for this profile
+              </div>
+            )}
           </TabsContent>
           
           <TabsContent value="iasted" className="flex-1 m-0 px-4 pb-4">
