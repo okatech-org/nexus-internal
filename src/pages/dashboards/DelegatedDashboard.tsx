@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell,
-  Phone, Users, Clock, CheckCircle, Send, ChevronRight
+  Phone, Video, Users, Clock, CheckCircle, Send, ChevronRight,
+  Calendar, Shield, Building2, Radio, PhoneCall, Mail
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useComms } from '@/contexts/CommsContext';
 import { useRealtime } from '@/hooks/useRealtime';
@@ -21,6 +23,7 @@ interface RecentContact {
   avatar?: string;
   lastSeen: string;
   online: boolean;
+  role?: string;
 }
 
 interface RecentConversation {
@@ -31,6 +34,57 @@ interface RecentConversation {
   unread: number;
   participants: string[];
 }
+
+interface UpcomingMeeting {
+  id: string;
+  title: string;
+  time: string;
+  date: string;
+  participants: number;
+}
+
+interface OfficialDocument {
+  id: string;
+  title: string;
+  status: 'pending' | 'signed' | 'draft';
+  date: string;
+  from: string;
+}
+
+// Profile types
+type DelegatedProfile = 'citizen' | 'gov-agent' | 'custom';
+
+interface ProfileConfig {
+  name: string;
+  description: string;
+  icon: typeof User;
+  color: string;
+  bgColor: string;
+}
+
+const profileConfigs: Record<DelegatedProfile, ProfileConfig> = {
+  'citizen': {
+    name: 'Espace Citoyen',
+    description: 'iChat + iContact',
+    icon: User,
+    color: 'text-purple-400',
+    bgColor: 'bg-purple-500/20',
+  },
+  'gov-agent': {
+    name: 'Agent Gouvernemental',
+    description: 'Full iCom + iCorrespondance',
+    icon: Shield,
+    color: 'text-emerald-400',
+    bgColor: 'bg-emerald-500/20',
+  },
+  'custom': {
+    name: 'Espace Personnel',
+    description: 'Configuration personnalisée',
+    icon: Building2,
+    color: 'text-blue-400',
+    bgColor: 'bg-blue-500/20',
+  },
+};
 
 export default function DelegatedDashboard() {
   const { t } = useTranslation();
@@ -45,8 +99,35 @@ export default function DelegatedDashboard() {
     return () => disconnect();
   }, [connect, disconnect]);
   
-  // Mock data for Citizen account (Chat + Contact only)
-  const recentConversations: RecentConversation[] = [
+  // Check which features are enabled
+  const hasChat = hasScope('icom:chat:*');
+  const hasCall = hasScope('icom:call:use');
+  const hasMeeting = hasScope('icom:meeting:use');
+  const hasContact = hasScope('icom:contact:read');
+  const hasIboite = hasScope('iboite:read');
+  const hasIasted = hasScope('iasted:chat');
+  const hasCorrespondance = hasScope('icorrespondance:read');
+  
+  // Determine profile based on realm and scopes
+  const getProfile = (): DelegatedProfile => {
+    const realm = payload?.realm;
+    if (realm === 'government' && hasChat && hasCall && hasMeeting && hasContact && hasCorrespondance) {
+      return 'gov-agent';
+    }
+    if (realm === 'citizen' && hasChat && hasContact && !hasCall && !hasMeeting) {
+      return 'citizen';
+    }
+    return 'custom';
+  };
+  
+  const profile = getProfile();
+  const profileConfig = profileConfigs[profile];
+  const ProfileIcon = profileConfig.icon;
+  const isGovAgent = profile === 'gov-agent';
+  const isCitizen = profile === 'citizen';
+  
+  // Mock data - Citizen conversations
+  const citizenConversations: RecentConversation[] = [
     {
       id: 'conv-1',
       title: 'Service des impôts',
@@ -73,54 +154,154 @@ export default function DelegatedDashboard() {
     },
   ];
   
-  const frequentContacts: RecentContact[] = [
+  // Mock data - Gov Agent conversations
+  const govConversations: RecentConversation[] = [
+    {
+      id: 'conv-1',
+      title: 'Direction Générale',
+      lastMessage: 'Rapport validé. Merci pour votre travail.',
+      timestamp: 'Il y a 10 min',
+      unread: 1,
+      participants: ['Directeur Adjoint', 'Chef de Cabinet'],
+    },
+    {
+      id: 'conv-2',
+      title: 'Équipe Technique',
+      lastMessage: 'Le système est opérationnel.',
+      timestamp: 'Il y a 30 min',
+      unread: 3,
+      participants: ['5 membres'],
+    },
+    {
+      id: 'conv-3',
+      title: 'Service Juridique',
+      lastMessage: 'Document signé et archivé.',
+      timestamp: 'Il y a 2h',
+      unread: 0,
+      participants: ['Conseiller Juridique'],
+    },
+  ];
+  
+  // Mock data - Contacts
+  const citizenContacts: RecentContact[] = [
     { id: 'c1', name: 'Service Impôts', lastSeen: 'En ligne', online: true },
     { id: 'c2', name: 'Mairie Centrale', lastSeen: 'Il y a 30 min', online: false },
     { id: 'c3', name: 'Support Citoyen', lastSeen: 'En ligne', online: true },
     { id: 'c4', name: 'Préfecture', lastSeen: 'Il y a 2h', online: false },
   ];
   
+  const govContacts: RecentContact[] = [
+    { id: 'c1', name: 'Jean-Pierre Martin', role: 'Directeur', lastSeen: 'En ligne', online: true },
+    { id: 'c2', name: 'Marie Dubois', role: 'Chef de Service', lastSeen: 'En ligne', online: true },
+    { id: 'c3', name: 'Paul Leroy', role: 'Conseiller', lastSeen: 'Il y a 15 min', online: false },
+    { id: 'c4', name: 'Sophie Bernard', role: 'Assistante', lastSeen: 'En ligne', online: true },
+    { id: 'c5', name: 'Thomas Petit', role: 'Technicien', lastSeen: 'Il y a 1h', online: false },
+  ];
+  
+  // Mock data - Meetings (Gov Agent only)
+  const upcomingMeetings: UpcomingMeeting[] = [
+    { id: 'm1', title: 'Réunion de cabinet', time: '14:00', date: 'Aujourd\'hui', participants: 8 },
+    { id: 'm2', title: 'Point sécurité', time: '10:00', date: 'Demain', participants: 5 },
+    { id: 'm3', title: 'Formation RGPD', time: '15:00', date: 'Ven 27', participants: 15 },
+  ];
+  
+  // Mock data - Official documents (Gov Agent only)
+  const officialDocuments: OfficialDocument[] = [
+    { id: 'd1', title: 'Arrêté N°2024-0892', status: 'pending', date: 'Aujourd\'hui', from: 'Préfet' },
+    { id: 'd2', title: 'Note de service #45', status: 'draft', date: 'Hier', from: 'DRH' },
+    { id: 'd3', title: 'Convention interministérielle', status: 'signed', date: '20 Déc', from: 'Ministère' },
+  ];
+  
+  const recentConversations = isGovAgent ? govConversations : citizenConversations;
+  const frequentContacts = isGovAgent ? govContacts : citizenContacts;
+  
   const modules = [
     { 
-      id: 'icom', 
-      name: t('dashboard.delegated.messages'), 
+      id: 'chat', 
+      name: 'iChat', 
       icon: MessageCircle, 
-      description: t('dashboard.delegated.liveConversations'),
-      color: 'text-icom bg-icom/20',
-      enabled: hasScope('icom:read'),
+      description: 'Messages instantanés',
+      color: 'text-blue-500 bg-blue-500/20',
+      enabled: hasChat,
       unread: recentConversations.reduce((sum, c) => sum + c.unread, 0),
     },
     { 
+      id: 'call', 
+      name: 'iAppel', 
+      icon: Phone, 
+      description: 'Appels vocaux',
+      color: 'text-orange-500 bg-orange-500/20',
+      enabled: hasCall,
+      unread: 1,
+    },
+    { 
+      id: 'meeting', 
+      name: 'iRéunion', 
+      icon: Video, 
+      description: 'Visioconférences',
+      color: 'text-purple-500 bg-purple-500/20',
+      enabled: hasMeeting,
+      unread: upcomingMeetings.length,
+    },
+    { 
+      id: 'contact', 
+      name: 'iContact', 
+      icon: Users, 
+      description: 'Annuaire',
+      color: 'text-emerald-500 bg-emerald-500/20',
+      enabled: hasContact,
+      unread: 0,
+    },
+    { 
       id: 'iboite', 
-      name: t('dashboard.delegated.inbox'), 
+      name: 'iBoîte', 
       icon: Inbox, 
-      description: t('dashboard.delegated.internalMail'),
+      description: 'Messages asynchrones',
       color: 'text-iboite bg-iboite/20',
-      enabled: hasScope('iboite:read'),
+      enabled: hasIboite,
       unread: 5,
     },
     { 
       id: 'iasted', 
-      name: t('dashboard.delegated.assistant'), 
+      name: 'iAsted', 
       icon: Brain, 
-      description: t('dashboard.delegated.smartHelp'),
+      description: 'Assistant IA',
       color: 'text-neural bg-neural/20',
-      enabled: hasScope('iasted:chat'),
+      enabled: hasIasted,
       unread: 0,
     },
     { 
       id: 'icorrespondance', 
-      name: t('dashboard.delegated.officialMail'), 
+      name: 'iCorrespondance', 
       icon: FileText, 
-      description: t('dashboard.delegated.adminDocs'),
+      description: 'Courrier officiel',
       color: 'text-primary bg-primary/20',
-      enabled: hasScope('icorrespondance:read'),
-      unread: 1,
+      enabled: hasCorrespondance,
+      unread: officialDocuments.filter(d => d.status === 'pending').length,
     },
   ];
   
-  const totalUnread = modules.reduce((sum, m) => sum + (m.enabled ? m.unread : 0), 0);
+  const enabledModules = modules.filter(m => m.enabled);
+  const totalUnread = enabledModules.reduce((sum, m) => sum + m.unread, 0);
   const recentEvents = events.slice(-5).reverse();
+  
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-warning/20 text-warning';
+      case 'signed': return 'bg-success/20 text-success';
+      case 'draft': return 'bg-muted text-muted-foreground';
+      default: return 'bg-muted text-muted-foreground';
+    }
+  };
+  
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'pending': return 'À signer';
+      case 'signed': return 'Signé';
+      case 'draft': return 'Brouillon';
+      default: return status;
+    }
+  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -129,19 +310,19 @@ export default function DelegatedDashboard() {
         <div className="container mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Link to="/">
+              <Link to="/demo-accounts">
                 <Button variant="ghost" size="icon">
                   <ArrowLeft className="w-5 h-5" />
                 </Button>
               </Link>
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-purple-500/20 flex items-center justify-center">
-                  <User className="w-5 h-5 text-purple-400" />
+                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", profileConfig.bgColor)}>
+                  <ProfileIcon className={cn("w-5 h-5", profileConfig.color)} />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">{t('dashboard.delegated.title')}</h1>
+                  <h1 className="text-xl font-bold text-foreground">{profileConfig.name}</h1>
                   <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground">{payload?.actor_id || payload?.sub}</p>
+                    <p className="text-xs text-muted-foreground font-mono">{payload?.actor_id || payload?.app_id}</p>
                     <span className={cn(
                       "w-2 h-2 rounded-full",
                       isConnected ? "bg-green-500" : "bg-muted"
@@ -234,7 +415,10 @@ export default function DelegatedDashboard() {
             {t('dashboard.delegated.welcome')}, {payload?.actor_id || t('modes.delegated')}
           </h2>
           <p className="text-muted-foreground">
-            {t('dashboard.delegated.accessComms')}
+            {isGovAgent 
+              ? 'Accédez à vos outils de communication et correspondance officielle'
+              : t('dashboard.delegated.accessComms')
+            }
           </p>
         </motion.div>
         
@@ -247,31 +431,58 @@ export default function DelegatedDashboard() {
         >
           <h3 className="font-medium text-foreground mb-4">{t('dashboard.delegated.quickActions')}</h3>
           <div className="flex flex-wrap gap-3">
-            <Button variant="neural" onClick={openCommsCenter}>
-              <MessageCircle className="w-4 h-4 mr-2" />
-              {t('dashboard.delegated.newConversation')}
-            </Button>
-            <Button variant="outline" onClick={openCommsCenter}>
-              <Users className="w-4 h-4 mr-2" />
-              Mes contacts
-            </Button>
-            <Button variant="outline" onClick={openCommsCenter}>
-              <Send className="w-4 h-4 mr-2" />
-              Envoyer un message
-            </Button>
+            {hasChat && (
+              <Button variant="neural" onClick={openCommsCenter}>
+                <MessageCircle className="w-4 h-4 mr-2" />
+                {t('dashboard.delegated.newConversation')}
+              </Button>
+            )}
+            {hasContact && (
+              <Button variant="outline" onClick={openCommsCenter}>
+                <Users className="w-4 h-4 mr-2" />
+                Mes contacts
+              </Button>
+            )}
+            {hasCall && (
+              <Button variant="outline" onClick={openCommsCenter} className="border-orange-500/30 hover:bg-orange-500/10">
+                <Phone className="w-4 h-4 mr-2 text-orange-500" />
+                Passer un appel
+              </Button>
+            )}
+            {hasMeeting && (
+              <Button variant="outline" onClick={openCommsCenter} className="border-purple-500/30 hover:bg-purple-500/10">
+                <Video className="w-4 h-4 mr-2 text-purple-500" />
+                Planifier réunion
+              </Button>
+            )}
+            {hasCorrespondance && (
+              <Button variant="outline" onClick={openCommsCenter}>
+                <FileText className="w-4 h-4 mr-2" />
+                Nouveau courrier
+              </Button>
+            )}
           </div>
         </motion.div>
         
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className={cn(
+          "grid gap-6",
+          isGovAgent ? "lg:grid-cols-3" : "lg:grid-cols-3"
+        )}>
           {/* Recent Conversations */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.15 }}
-            className="lg:col-span-2 glass rounded-2xl p-6"
+            className={cn(
+              "glass rounded-2xl p-6",
+              isGovAgent ? "" : "lg:col-span-2"
+            )}
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-foreground">Conversations récentes</h3>
+              <h3 className="font-medium text-foreground flex items-center gap-2">
+                <MessageCircle className="w-4 h-4 text-blue-500" />
+                Conversations récentes
+              </h3>
               <Button variant="ghost" size="sm" onClick={openCommsCenter}>
                 Voir tout <ChevronRight className="w-4 h-4 ml-1" />
               </Button>
@@ -285,8 +496,8 @@ export default function DelegatedDashboard() {
                   className="w-full p-4 rounded-xl bg-background/50 hover:bg-background/80 transition-colors text-left flex items-center gap-4"
                   onClick={openCommsCenter}
                 >
-                  <div className="w-12 h-12 rounded-xl bg-icom/20 flex items-center justify-center flex-shrink-0">
-                    <MessageCircle className="w-6 h-6 text-icom" />
+                  <div className="w-12 h-12 rounded-xl bg-blue-500/20 flex items-center justify-center flex-shrink-0">
+                    <MessageCircle className="w-6 h-6 text-blue-500" />
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
@@ -308,6 +519,67 @@ export default function DelegatedDashboard() {
             </div>
           </motion.div>
           
+          {/* Upcoming Meetings - Gov Agent only */}
+          {isGovAgent && hasMeeting && (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="glass rounded-2xl p-6"
+            >
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="font-medium text-foreground flex items-center gap-2">
+                  <Video className="w-4 h-4 text-purple-500" />
+                  Réunions à venir
+                </h3>
+              </div>
+              
+              <div className="space-y-3">
+                {upcomingMeetings.map((meeting, index) => (
+                  <div 
+                    key={meeting.id}
+                    className={cn(
+                      "p-3 rounded-xl transition-colors cursor-pointer",
+                      index === 0 
+                        ? "bg-purple-500/10 border border-purple-500/30" 
+                        : "bg-background/50 hover:bg-background/80"
+                    )}
+                    onClick={openCommsCenter}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-foreground text-sm">{meeting.title}</span>
+                      {index === 0 && (
+                        <Badge variant="outline" className="border-purple-500/30 text-purple-500 text-xs">
+                          Bientôt
+                        </Badge>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3" />
+                        {meeting.date}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {meeting.time}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="w-3 h-3" />
+                        {meeting.participants}
+                      </span>
+                    </div>
+                    {index === 0 && (
+                      <Button size="sm" className="w-full mt-3 bg-purple-500 hover:bg-purple-600">
+                        <Video className="w-4 h-4 mr-2" />
+                        Rejoindre
+                      </Button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+          
           {/* Frequent Contacts */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -316,14 +588,17 @@ export default function DelegatedDashboard() {
             className="glass rounded-2xl p-6"
           >
             <div className="flex items-center justify-between mb-4">
-              <h3 className="font-medium text-foreground">Contacts fréquents</h3>
+              <h3 className="font-medium text-foreground flex items-center gap-2">
+                <Users className="w-4 h-4 text-emerald-500" />
+                Contacts fréquents
+              </h3>
               <Button variant="ghost" size="sm" onClick={openCommsCenter}>
                 <Users className="w-4 h-4" />
               </Button>
             </div>
             
             <div className="space-y-3">
-              {frequentContacts.map((contact) => (
+              {frequentContacts.slice(0, isGovAgent ? 5 : 4).map((contact) => (
                 <motion.button
                   key={contact.id}
                   whileHover={{ scale: 1.02 }}
@@ -341,26 +616,84 @@ export default function DelegatedDashboard() {
                   </div>
                   <div className="flex-1 text-left">
                     <h4 className="text-sm font-medium text-foreground">{contact.name}</h4>
-                    <p className="text-xs text-muted-foreground">{contact.lastSeen}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {contact.role || contact.lastSeen}
+                    </p>
                   </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <MessageCircle className="w-4 h-4" />
-                  </Button>
+                  <div className="flex gap-1">
+                    {hasChat && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <MessageCircle className="w-4 h-4" />
+                      </Button>
+                    )}
+                    {hasCall && (
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <Phone className="w-4 h-4 text-orange-500" />
+                      </Button>
+                    )}
+                  </div>
                 </motion.button>
               ))}
             </div>
           </motion.div>
         </div>
         
+        {/* Official Documents - Gov Agent only */}
+        {isGovAgent && hasCorrespondance && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.25 }}
+            className="mt-6 glass rounded-2xl p-6"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-medium text-foreground flex items-center gap-2">
+                <FileText className="w-4 h-4 text-primary" />
+                Correspondance officielle
+              </h3>
+              <Button variant="ghost" size="sm" onClick={openCommsCenter}>
+                Voir tout <ChevronRight className="w-4 h-4 ml-1" />
+              </Button>
+            </div>
+            
+            <div className="grid gap-4 md:grid-cols-3">
+              {officialDocuments.map((doc) => (
+                <motion.button
+                  key={doc.id}
+                  whileHover={{ scale: 1.02 }}
+                  className="p-4 rounded-xl bg-background/50 hover:bg-background/80 transition-colors text-left"
+                  onClick={openCommsCenter}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                      <FileText className="w-5 h-5 text-primary" />
+                    </div>
+                    <Badge className={cn("text-xs", getStatusColor(doc.status))}>
+                      {getStatusLabel(doc.status)}
+                    </Badge>
+                  </div>
+                  <h4 className="font-medium text-foreground text-sm mb-1">{doc.title}</h4>
+                  <p className="text-xs text-muted-foreground">
+                    De: {doc.from} · {doc.date}
+                  </p>
+                </motion.button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+        
         {/* Modules Grid */}
         <h3 className="font-medium text-foreground mt-8 mb-4">{t('dashboard.delegated.yourServices')}</h3>
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {modules.filter(m => m.enabled).map((module, index) => (
+        <div className={cn(
+          "grid gap-4",
+          enabledModules.length <= 4 ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3 lg:grid-cols-4"
+        )}>
+          {enabledModules.map((module, index) => (
             <motion.button
               key={module.id}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.25 + index * 0.05 }}
+              transition={{ delay: 0.3 + index * 0.05 }}
               className="glass rounded-xl p-5 text-left hover:border-primary/30 transition-colors"
               onClick={openCommsCenter}
             >
@@ -385,8 +718,46 @@ export default function DelegatedDashboard() {
           ))}
         </div>
         
+        {/* Session Info - Gov Agent */}
+        {isGovAgent && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="mt-6 glass rounded-2xl p-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <Badge variant="default" className={cn(
+                  "border",
+                  isConnected 
+                    ? "bg-success/20 text-success border-success/30" 
+                    : "bg-muted/20 text-muted-foreground border-muted/30"
+                )}>
+                  <Radio className={cn("w-3 h-3 mr-1", isConnected && "animate-pulse")} />
+                  {isConnected ? 'Connecté' : 'Hors ligne'}
+                </Badge>
+                <span className="text-xs text-muted-foreground">
+                  Réseau: <span className="font-mono">{payload?.network_type}</span>
+                </span>
+                <span className="text-xs text-muted-foreground">
+                  App: <span className="font-mono">{payload?.app_id}</span>
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {new Date().toLocaleDateString('fr-FR', { 
+                  weekday: 'long', 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric' 
+                })}
+              </span>
+            </div>
+          </motion.div>
+        )}
+        
         {/* Disabled modules notice */}
-        {modules.some(m => !m.enabled) && (
+        {modules.some(m => !m.enabled) && !isGovAgent && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
