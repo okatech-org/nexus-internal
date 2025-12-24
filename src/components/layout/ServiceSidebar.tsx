@@ -334,15 +334,15 @@ export function ServiceSidebar({
   };
 
   return (
-    <Sidebar collapsible="icon" className="border-r border-sidebar-border">
+    <Sidebar collapsible="icon" className="border-r border-sidebar-border bg-sidebar">
       {/* Header */}
-      <SidebarHeader className="px-4 py-4">
-        <div className="flex items-center gap-3">
+      <SidebarHeader className="px-3 py-3 sm:px-4 sm:py-4">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className={cn(
-            "rounded-xl flex items-center justify-center shrink-0 w-10 h-10",
+            "rounded-xl flex items-center justify-center shrink-0 w-9 h-9 sm:w-10 sm:h-10",
             profileConfig.bgColor
           )}>
-            <ProfileIcon className={cn("w-5 h-5", profileConfig.color)} />
+            <ProfileIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", profileConfig.color)} />
           </div>
           {!collapsed && (
             <div className="min-w-0 flex-1">
@@ -357,18 +357,18 @@ export function ServiceSidebar({
         </div>
         
         {!collapsed && activeProfile && (
-          <div className="mt-3 p-2 rounded-lg bg-sidebar-accent/50">
+          <div className="mt-2 sm:mt-3 p-2 rounded-lg bg-sidebar-accent/50">
             <div className="flex items-center gap-2">
               <span className="w-2 h-2 rounded-full bg-success shrink-0" />
               <span className="text-xs font-mono text-sidebar-foreground/70 truncate">
                 {payload?.app_id}
               </span>
             </div>
-            <div className="flex gap-1 mt-1.5">
-              <Badge variant="outline" className="text-[10px] px-1.5">
+            <div className="flex gap-1 mt-1.5 flex-wrap">
+              <Badge variant="outline" className="text-[10px] px-1.5 h-5">
                 {payload?.network_type}
               </Badge>
-              <Badge variant="outline" className="text-[10px] px-1.5">
+              <Badge variant="outline" className="text-[10px] px-1.5 h-5">
                 {mode}
               </Badge>
             </div>
@@ -379,11 +379,11 @@ export function ServiceSidebar({
       <SidebarSeparator />
 
       {/* Navigation */}
-      <SidebarContent>
+      <SidebarContent className="px-2">
         {menuGroups.map((group) => (
-          <SidebarGroup key={group.group}>
+          <SidebarGroup key={group.group} className="py-2">
             {group.label && (
-              <SidebarGroupLabel className="text-xs uppercase tracking-wider text-sidebar-foreground/50">
+              <SidebarGroupLabel className="text-[10px] sm:text-xs uppercase tracking-wider text-sidebar-foreground/50 px-2 mb-1">
                 {group.label}
               </SidebarGroupLabel>
             )}
@@ -394,12 +394,12 @@ export function ServiceSidebar({
                     <SidebarMenuButton
                       onClick={() => handleItemClick(item.action)}
                       tooltip={collapsed ? item.title : undefined}
-                      className="relative cursor-pointer"
+                      className="relative cursor-pointer h-9 sm:h-10 px-2 sm:px-3 hover:bg-sidebar-accent/70 transition-colors rounded-lg"
                     >
                       <item.icon className={cn("w-4 h-4 shrink-0", item.color)} />
                       {!collapsed && (
                         <>
-                          <span className="flex-1">{item.title}</span>
+                          <span className="flex-1 text-sm">{item.title}</span>
                           {item.unread !== undefined && item.unread > 0 && (
                             <Badge 
                               variant="secondary" 
@@ -415,7 +415,7 @@ export function ServiceSidebar({
                         </>
                       )}
                       {collapsed && item.unread !== undefined && item.unread > 0 && (
-                        <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-destructive text-[10px] flex items-center justify-center text-white font-medium">
+                        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-destructive text-[9px] flex items-center justify-center text-white font-medium">
                           {item.unread > 9 ? '9+' : item.unread}
                         </span>
                       )}
@@ -429,17 +429,17 @@ export function ServiceSidebar({
       </SidebarContent>
 
       {/* Footer */}
-      <SidebarFooter className="px-4 py-4">
+      <SidebarFooter className="px-2 py-3 sm:px-4 sm:py-4">
         {!collapsed && gamificationStats.level !== undefined && (
-          <div className="p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 mb-3">
+          <div className="p-2.5 sm:p-3 rounded-xl bg-gradient-to-br from-amber-500/20 to-orange-500/20 mb-2 sm:mb-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-amber-500" />
+                <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-500" />
                 <span className="text-xs font-medium text-sidebar-foreground">
                   Niveau {gamificationStats.level}
                 </span>
               </div>
-              <Badge className="bg-amber-500/20 text-amber-400 text-[10px]">
+              <Badge className="bg-amber-500/20 text-amber-400 text-[10px] h-5">
                 {gamificationStats.level && gamificationStats.level >= 10 ? 'Expert' : 'Novice'}
               </Badge>
             </div>
@@ -449,10 +449,10 @@ export function ServiceSidebar({
         <SidebarMenuButton
           onClick={() => handleItemClick('notifications')}
           tooltip={collapsed ? 'Notifications' : undefined}
-          className="cursor-pointer"
+          className="cursor-pointer h-9 px-2 sm:px-3 hover:bg-sidebar-accent/70 rounded-lg"
         >
           <Bell className="w-4 h-4" />
-          {!collapsed && <span>Notifications</span>}
+          {!collapsed && <span className="text-sm">Notifications</span>}
         </SidebarMenuButton>
         
         <SidebarSeparator className="my-2" />
@@ -460,10 +460,10 @@ export function ServiceSidebar({
         <Link to="/demo-accounts">
           <SidebarMenuButton
             tooltip={collapsed ? 'Changer de compte' : undefined}
-            className="cursor-pointer"
+            className="cursor-pointer h-9 px-2 sm:px-3 hover:bg-sidebar-accent/70 rounded-lg"
           >
             <ChevronLeft className="w-4 h-4" />
-            {!collapsed && <span>Changer de compte</span>}
+            {!collapsed && <span className="text-sm">Changer de compte</span>}
           </SidebarMenuButton>
         </Link>
       </SidebarFooter>
