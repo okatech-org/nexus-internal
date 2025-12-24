@@ -79,7 +79,7 @@ const mockThreads = [
 ];
 
 // Determine app profile based on scopes
-type AppProfile = 'gov-full' | 'biz-call-contact' | 'citizen-chat-contact' | 'custom';
+type AppProfile = 'gov-full' | 'biz-call-contact' | 'citizen-chat-contact' | 'startup-chat' | 'custom';
 
 interface AppProfileConfig {
   name: string;
@@ -111,12 +111,19 @@ const appProfiles: Record<AppProfile, AppProfileConfig> = {
     color: 'text-purple-400',
     bgColor: 'bg-purple-500/20',
   },
+  'startup-chat': {
+    name: 'Startup App',
+    description: 'iChat + iContact',
+    icon: Building2,
+    color: 'text-orange-400',
+    bgColor: 'bg-orange-500/20',
+  },
   'custom': {
     name: 'Service',
     description: 'Custom Configuration',
     icon: Building2,
-    color: 'text-orange-400',
-    bgColor: 'bg-orange-500/20',
+    color: 'text-gray-400',
+    bgColor: 'bg-gray-500/20',
   },
 };
 
@@ -147,13 +154,21 @@ export default function ServiceDashboard() {
   // Determine app profile
   const getAppProfile = (): AppProfile => {
     const networkType = payload?.network_type;
+    const realm = payload?.realm;
     
+    // Gov Service - Full iCom
     if (networkType === 'government' && hasChat && hasCall && hasMeeting && hasContact) {
       return 'gov-full';
     }
+    // Biz Service - Call + Contact only
     if (networkType === 'commercial' && hasCall && hasContact && !hasChat && !hasMeeting) {
       return 'biz-call-contact';
     }
+    // Startup - Chat + Contact, no iBoîte
+    if (realm === 'business' && hasChat && hasContact && !hasCall && !hasMeeting && !hasIboite) {
+      return 'startup-chat';
+    }
+    // Citizen - Chat + Contact
     if (hasChat && hasContact && !hasCall && !hasMeeting) {
       return 'citizen-chat-contact';
     }
@@ -185,8 +200,10 @@ export default function ServiceDashboard() {
     }
   };
   
-  // Biz Service specific: Call + Contact only view
+  // Profile-specific layout flags
   const isBizProfile = appProfile === 'biz-call-contact';
+  const isStartupProfile = appProfile === 'startup-chat';
+  const isChatFocused = isStartupProfile || appProfile === 'citizen-chat-contact';
   
   return (
     <div className="min-h-screen bg-background">
