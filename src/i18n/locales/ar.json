@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "save": "حفظ",
+    "cancel": "إلغاء",
+    "delete": "حذف",
+    "create": "إنشاء",
+    "edit": "تعديل",
+    "close": "إغلاق",
+    "open": "فتح",
+    "send": "إرسال",
+    "reset": "إعادة تعيين",
+    "search": "بحث",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق",
+    "yes": "نعم",
+    "no": "لا",
+    "enabled": "مفعّل",
+    "disabled": "معطّل"
+  },
+  "nav": {
+    "home": "الرئيسية",
+    "debug": "تصحيح",
+    "simulator": "المحاكي"
+  },
+  "quickDemo": {
+    "title": "عرض سريع",
+    "platformAdmin": "مدير المنصة",
+    "govService": "خدمة حكومية",
+    "bizService": "خدمة تجارية",
+    "citizen": "مواطن",
+    "govAgent": "موظف حكومي",
+    "openComms": "مركز الاتصالات",
+    "openAsted": "iAsted"
+  },
+  "modules": {
+    "icom": "iCom",
+    "iboite": "iBoîte",
+    "iasted": "iAsted",
+    "icorrespondance": "iCorrespondance"
+  },
+  "simulator": {
+    "title": "محاكي التطبيقات المتعددة",
+    "subtitle": "اتصال التطبيقات جنبًا إلى جنب",
+    "clientApp1": "تطبيق العميل #1",
+    "clientApp2": "تطبيق العميل #2",
+    "selectProfile": "اختر ملف تعريف",
+    "bothToGov": "كلاهما للحكومة",
+    "bothToCommercial": "كلاهما للتجاري",
+    "resetData": "إعادة تعيين",
+    "policies": "السياسات",
+    "conversations": "المحادثات",
+    "threads": "المواضيع",
+    "noConversations": "لا توجد محادثات. انقر على + لبدء واحدة.",
+    "noThreads": "لا توجد مواضيع. أدخل موضوعًا وانقر على + لبدء واحد.",
+    "noMessages": "لا توجد رسائل بعد",
+    "typeMessage": "اكتب رسالة...",
+    "replyToThread": "الرد على الموضوع...",
+    "newThreadSubject": "عنوان موضوع جديد...",
+    "createConversation": "إنشاء محادثة مع تطبيق آخر",
+    "createThread": "إنشاء موضوع مع تطبيق آخر",
+    "needBothApps": "يجب تكوين كلا التطبيقين في نفس الشبكة",
+    "sameNetworkRequired": "يجب أن تكون التطبيقات في نفس المستأجر والشبكة",
+    "conversationCreated": "تم إنشاء المحادثة",
+    "threadCreated": "تم إنشاء الموضوع",
+    "enterSubject": "الرجاء إدخال موضوع",
+    "platformDataReset": "تمت إعادة تعيين بيانات المنصة",
+    "icomDisabled": "iCom معطّل لهذا الملف الشخصي",
+    "iboiteDisabled": "iBoîte معطّل لهذا الملف الشخصي",
+    "iastedSimulation": "محاكاة iAsted قريبًا",
+    "icorrGovOnly": "iCorrespondance (حكومي فقط)"
+  },
+  "policies": {
+    "title": "سياسات الاتصال بين المجالات",
+    "governmentNetwork": "الشبكة الحكومية",
+    "commercialNetwork": "الشبكة التجارية",
+    "fromTo": "من \\ إلى",
+    "gov": "حكومي",
+    "biz": "تجاري",
+    "cit": "مواطن",
+    "pla": "منصة",
+    "allowed": "مسموح (مرر للوحدات)",
+    "notAllowed": "غير مسموح",
+    "icorrGovOnly": "iCorr = حكومي فقط",
+    "noIcorrCommercial": "لا iCorr في التجاري",
+    "customerService": "خدمة العملاء",
+    "publicServices": "الخدمات العامة",
+    "p2pMessaging": "رسائل P2P فقط",
+    "p2pNotAllowed": "P2P غير مسموح",
+    "useCommercialNetwork": "استخدم الشبكة التجارية",
+    "govUsesGovNetwork": "الحكومة تستخدم شبكة الحكومة"
+  },
+  "debug": {
+    "title": "وحدة التحكم بالتصحيح",
+    "activeIdentity": "الهوية النشطة",
+    "effectiveModules": "الوحدات الفعالة",
+    "noProfile": "لم يتم اختيار ملف تعريف",
+    "profileId": "معرف الملف",
+    "appId": "معرف التطبيق",
+    "tenantId": "معرف المستأجر",
+    "networkType": "نوع الشبكة",
+    "realm": "المجال",
+    "mode": "الوضع",
+    "actorId": "معرف الممثل"
+  },
+  "demoAccounts": {
+    "title": "حسابات العرض",
+    "builtIn": "ملفات تعريف مدمجة",
+    "custom": "ملفات تعريف مخصصة",
+    "createCustom": "إنشاء ملف تعريف مخصص",
+    "noCustom": "لا توجد ملفات تعريف مخصصة",
+    "walkthrough": "جولة إرشادية",
+    "resetAll": "إعادة تعيين الكل"
+  },
+  "networkTypes": {
+    "government": "حكومي",
+    "commercial": "تجاري"
+  },
+  "modes": {
+    "platform_admin": "مدير المنصة",
+    "service": "خدمة",
+    "delegated": "مفوض"
+  },
+  "realms": {
+    "government": "حكومي",
+    "business": "تجاري",
+    "citizen": "مواطن",
+    "platform": "منصة"
+  }
+}

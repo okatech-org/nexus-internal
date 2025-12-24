@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "delete": "Supprimer",
+    "create": "Créer",
+    "edit": "Modifier",
+    "close": "Fermer",
+    "open": "Ouvrir",
+    "send": "Envoyer",
+    "reset": "Réinitialiser",
+    "search": "Rechercher",
+    "back": "Retour",
+    "next": "Suivant",
+    "previous": "Précédent",
+    "yes": "Oui",
+    "no": "Non",
+    "enabled": "Activé",
+    "disabled": "Désactivé"
+  },
+  "nav": {
+    "home": "Accueil",
+    "debug": "Débogage",
+    "simulator": "Simulateur"
+  },
+  "quickDemo": {
+    "title": "Démo rapide",
+    "platformAdmin": "Admin Plateforme",
+    "govService": "Service Gov",
+    "bizService": "Service Biz",
+    "citizen": "Citoyen",
+    "govAgent": "Agent Gov",
+    "openComms": "Centre Comms",
+    "openAsted": "iAsted"
+  },
+  "modules": {
+    "icom": "iCom",
+    "iboite": "iBoîte",
+    "iasted": "iAsted",
+    "icorrespondance": "iCorrespondance"
+  },
+  "simulator": {
+    "title": "Simulateur Multi-App",
+    "subtitle": "Communication inter-applications côte à côte",
+    "clientApp1": "Application Client #1",
+    "clientApp2": "Application Client #2",
+    "selectProfile": "Sélectionner un profil",
+    "bothToGov": "Les deux en Gov",
+    "bothToCommercial": "Les deux en Commercial",
+    "resetData": "Réinit.",
+    "policies": "Politiques",
+    "conversations": "Conversations",
+    "threads": "Fils de discussion",
+    "noConversations": "Aucune conversation. Cliquez sur + pour en créer une.",
+    "noThreads": "Aucun fil. Entrez un sujet et cliquez sur + pour en créer un.",
+    "noMessages": "Aucun message",
+    "typeMessage": "Tapez un message...",
+    "replyToThread": "Répondre au fil...",
+    "newThreadSubject": "Nouveau sujet de fil...",
+    "createConversation": "Créer une conversation avec l'autre application",
+    "createThread": "Créer un fil avec l'autre application",
+    "needBothApps": "Les deux applications doivent être configurées dans le même réseau",
+    "sameNetworkRequired": "Les applications doivent être dans le même tenant et réseau",
+    "conversationCreated": "Conversation créée",
+    "threadCreated": "Fil créé",
+    "enterSubject": "Veuillez entrer un sujet",
+    "platformDataReset": "Données de la plateforme réinitialisées",
+    "icomDisabled": "iCom désactivé pour ce profil",
+    "iboiteDisabled": "iBoîte désactivé pour ce profil",
+    "iastedSimulation": "Simulation iAsted à venir",
+    "icorrGovOnly": "iCorrespondance (Gouvernement uniquement)"
+  },
+  "policies": {
+    "title": "Politiques de communication entre domaines",
+    "governmentNetwork": "Réseau Gouvernemental",
+    "commercialNetwork": "Réseau Commercial",
+    "fromTo": "De \\ Vers",
+    "gov": "gov",
+    "biz": "biz",
+    "cit": "cit",
+    "pla": "pla",
+    "allowed": "Autorisé (survoler pour modules)",
+    "notAllowed": "Non autorisé",
+    "icorrGovOnly": "iCorr = Gouvernement uniquement",
+    "noIcorrCommercial": "Pas d'iCorr en commercial",
+    "customerService": "Service client",
+    "publicServices": "Services publics",
+    "p2pMessaging": "Messagerie P2P uniquement",
+    "p2pNotAllowed": "P2P non autorisé",
+    "useCommercialNetwork": "Utiliser le réseau commercial",
+    "govUsesGovNetwork": "Gov utilise le réseau gov"
+  },
+  "debug": {
+    "title": "Console de débogage",
+    "activeIdentity": "Identité active",
+    "effectiveModules": "Modules effectifs",
+    "noProfile": "Aucun profil sélectionné",
+    "profileId": "ID Profil",
+    "appId": "ID Application",
+    "tenantId": "ID Tenant",
+    "networkType": "Type de réseau",
+    "realm": "Domaine",
+    "mode": "Mode",
+    "actorId": "ID Acteur"
+  },
+  "demoAccounts": {
+    "title": "Comptes de démonstration",
+    "builtIn": "Profils intégrés",
+    "custom": "Profils personnalisés",
+    "createCustom": "Créer un profil personnalisé",
+    "noCustom": "Aucun profil personnalisé",
+    "walkthrough": "Visite guidée",
+    "resetAll": "Tout réinitialiser"
+  },
+  "networkTypes": {
+    "government": "Gouvernement",
+    "commercial": "Commercial"
+  },
+  "modes": {
+    "platform_admin": "Admin Plateforme",
+    "service": "Service",
+    "delegated": "Délégué"
+  },
+  "realms": {
+    "government": "Gouvernement",
+    "business": "Entreprise",
+    "citizen": "Citoyen",
+    "platform": "Plateforme"
+  }
+}
