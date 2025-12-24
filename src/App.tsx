@@ -16,6 +16,7 @@ import Debug from "./pages/Debug";
 import Simulator from "./pages/Simulator";
 import Forbidden from "./pages/Forbidden";
 import NotFound from "./pages/NotFound";
+import AcceptInvitePage from "./pages/AcceptInvitePage";
 
 // Dashboards
 import PlatformAdminDashboard from "./pages/dashboards/PlatformAdminDashboard";
@@ -39,6 +40,7 @@ const App = () => (
                 <Route path="/login" element={<Login />} />
                 <Route path="/demo-accounts" element={<DemoAccountsPage />} />
                 <Route path="/forbidden" element={<Forbidden />} />
+                <Route path="/invite/:token" element={<AcceptInvitePage />} />
                 
                 {/* Protected routes - Main App */}
                 <Route path="/" element={
