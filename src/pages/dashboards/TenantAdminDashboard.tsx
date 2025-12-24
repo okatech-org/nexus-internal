@@ -3,6 +3,7 @@
  * Complete tenant administration space with sidebar navigation
  */
 
+import { useState, useEffect, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
@@ -17,10 +18,9 @@ import {
   Inbox,
   Bot,
   Users,
-  Check,
-  X,
   TrendingUp,
-  Clock
+  Clock,
+  RefreshCw
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -29,12 +29,44 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { AdminLayout } from '@/components/layout/AdminLayout';
+import { CreateApplicationDialog } from '@/components/tenant/CreateApplicationDialog';
+import { InviteUserDialog } from '@/components/tenant/InviteUserDialog';
+import { UsageMetricsChart } from '@/components/tenant/UsageMetricsChart';
 import { cn } from '@/lib/utils';
-import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
+
+// ============= Types =============
+
+interface Application {
+  id: string;
+  name: string;
+  description: string | null;
+  app_id: string;
+  status: string;
+  network_type: string;
+  created_at: string;
+  module_settings?: ModuleSetting[];
+}
+
+interface ModuleSetting {
+  id: string;
+  module_name: string;
+  enabled: boolean;
+  settings: unknown;
+}
+
+interface TenantMember {
+  id: string;
+  user_id: string;
+  role: string;
+  status: string;
+  invited_at: string;
+  joined_at: string | null;
+}
 
 // ============= Sub-Pages =============
 
@@ -42,9 +74,10 @@ function DashboardOverview() {
   const { t } = useTranslation();
   const { payload } = useAuth();
   const { apps } = useDemo();
+  const [showCreateApp, setShowCreateApp] = useState(false);
+  const [showInviteUser, setShowInviteUser] = useState(false);
   
   const tenantApps = apps.filter(app => app.tenant_id === payload?.tenant_id);
-  const activeApps = tenantApps.filter(app => app.status === 'active');
   
   const stats = [
     { label: 'Applications', value: tenantApps.length, icon: AppWindow, change: '+2 ce mois' },
@@ -59,6 +92,9 @@ function DashboardOverview() {
     { time: '10:40:12', action: 'Thread créé', details: 'iBoîte', user: 'agent@ministry.gov' },
     { time: '10:38:45', action: 'Utilisateur ajouté', details: 'Jean Dupont', user: 'admin@ministry.gov' },
   ];
+
+  // Mock tenant ID - in real app, would come from auth context
+  const tenantId = payload?.tenant_id || 'demo-tenant';
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -80,6 +116,9 @@ function DashboardOverview() {
         ))}
       </div>
 
+      {/* Usage Metrics Chart */}
+      <UsageMetricsChart tenantName={payload?.tenant_id} />
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Quick Actions */}
         <Card className="bg-card/50 border-border/50">
@@ -87,11 +126,11 @@ function DashboardOverview() {
             <CardTitle className="text-lg">Actions rapides</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3">
-            <Button variant="outline" className="justify-start gap-2">
+            <Button variant="outline" className="justify-start gap-2" onClick={() => setShowCreateApp(true)}>
               <Plus className="w-4 h-4" />
               Nouvelle application
             </Button>
-            <Button variant="outline" className="justify-start gap-2">
+            <Button variant="outline" className="justify-start gap-2" onClick={() => setShowInviteUser(true)}>
               <Users className="w-4 h-4" />
               Inviter un utilisateur
             </Button>
@@ -121,6 +160,18 @@ function DashboardOverview() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Dialogs */}
+      <CreateApplicationDialog 
+        open={showCreateApp} 
+        onOpenChange={setShowCreateApp}
+        tenantId={tenantId}
+      />
+      <InviteUserDialog 
+        open={showInviteUser} 
+        onOpenChange={setShowInviteUser}
+        tenantId={tenantId}
+      />
     </motion.div>
   );
 }
@@ -130,11 +181,61 @@ function AppsList() {
   const { payload } = useAuth();
   const { apps } = useDemo();
   const [search, setSearch] = useState('');
+  const [showCreateApp, setShowCreateApp] = useState(false);
+  const [dbApps, setDbApps] = useState<Application[]>([]);
+  const [loading, setLoading] = useState(true);
   
+  const tenantId = payload?.tenant_id || 'demo-tenant';
+
+  const fetchApps = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('applications')
+        .select(`
+          *,
+          module_settings (*)
+        `)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setDbApps(data || []);
+    } catch (error) {
+      console.error('Error fetching applications:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchApps();
+  }, [fetchApps]);
+
+  // Combine mock apps with DB apps for demo
   const tenantApps = apps.filter(app => 
     app.tenant_id === payload?.tenant_id &&
     app.name.toLowerCase().includes(search.toLowerCase())
   );
+
+  const filteredDbApps = dbApps.filter(app =>
+    app.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  const allApps = [...filteredDbApps, ...tenantApps.map(app => ({
+    id: app.app_id,
+    name: app.name,
+    description: null,
+    app_id: app.app_id,
+    status: app.status,
+    network_type: 'intranet',
+    created_at: new Date().toISOString(),
+    module_settings: Object.entries(app.enabled_modules).map(([name, enabled]) => ({
+      id: name,
+      module_name: name,
+      enabled: enabled as boolean,
+      settings: {}
+    }))
+  }))];
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -148,14 +249,19 @@ function AppsList() {
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
-        <Button className="gap-2">
-          <Plus className="w-4 h-4" />
-          Nouvelle application
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="icon" onClick={fetchApps}>
+            <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
+          </Button>
+          <Button className="gap-2" onClick={() => setShowCreateApp(true)}>
+            <Plus className="w-4 h-4" />
+            Nouvelle application
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4">
-        {tenantApps.length > 0 ? tenantApps.map((app) => (
+        {allApps.length > 0 ? allApps.map((app) => (
           <Card key={app.app_id} className="bg-card/50 border-border/50">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
@@ -190,15 +296,15 @@ function AppsList() {
               </div>
               
               <div className="mt-4 flex gap-2">
-                {Object.entries(app.enabled_modules).map(([module, enabled]) => (
+                {app.module_settings?.map((mod) => (
                   <span 
-                    key={module}
+                    key={mod.module_name}
                     className={cn(
                       "px-2 py-0.5 rounded text-xs",
-                      enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                      mod.enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
                     )}
                   >
-                    {module}
+                    {mod.module_name}
                   </span>
                 ))}
               </div>
@@ -207,11 +313,18 @@ function AppsList() {
         )) : (
           <Card className="bg-card/50 border-border/50">
             <CardContent className="py-12 text-center text-muted-foreground">
-              Aucune application trouvée
+              {loading ? 'Chargement...' : 'Aucune application trouvée'}
             </CardContent>
           </Card>
         )}
       </div>
+
+      <CreateApplicationDialog 
+        open={showCreateApp} 
+        onOpenChange={setShowCreateApp}
+        tenantId={tenantId}
+        onSuccess={fetchApps}
+      />
     </motion.div>
   );
 }
@@ -417,20 +530,69 @@ function IAstedConfig() {
 }
 
 function UsersList() {
-  const users = [
-    { id: '1', name: 'Jean Dupont', email: 'jean.dupont@ministry.gov', role: 'Admin', status: 'active' },
-    { id: '2', name: 'Marie Martin', email: 'marie.martin@ministry.gov', role: 'Agent', status: 'active' },
-    { id: '3', name: 'Pierre Durand', email: 'pierre.durand@ministry.gov', role: 'Agent', status: 'inactive' },
+  const { payload } = useAuth();
+  const [showInviteUser, setShowInviteUser] = useState(false);
+  const [members, setMembers] = useState<TenantMember[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+
+  const tenantId = payload?.tenant_id || 'demo-tenant';
+
+  const fetchMembers = useCallback(async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('tenant_members')
+        .select('*')
+        .order('invited_at', { ascending: false });
+
+      if (error) throw error;
+      setMembers(data || []);
+    } catch (error) {
+      console.error('Error fetching members:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMembers();
+  }, [fetchMembers]);
+
+  // Mock users for demo
+  const mockUsers = [
+    { id: '1', name: 'Jean Dupont', email: 'jean.dupont@ministry.gov', role: 'admin', status: 'active' },
+    { id: '2', name: 'Marie Martin', email: 'marie.martin@ministry.gov', role: 'member', status: 'active' },
+    { id: '3', name: 'Pierre Durand', email: 'pierre.durand@ministry.gov', role: 'viewer', status: 'inactive' },
   ];
+
+  const allUsers = [
+    ...members.map(m => ({
+      id: m.id,
+      name: 'Utilisateur',
+      email: m.user_id,
+      role: m.role,
+      status: m.status
+    })),
+    ...mockUsers
+  ].filter(u => 
+    u.name.toLowerCase().includes(search.toLowerCase()) ||
+    u.email.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       <div className="flex items-center justify-between">
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder="Rechercher un utilisateur..." className="pl-9" />
+          <Input 
+            placeholder="Rechercher un utilisateur..." 
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
         </div>
-        <Button className="gap-2">
+        <Button className="gap-2" onClick={() => setShowInviteUser(true)}>
           <Plus className="w-4 h-4" />
           Inviter un utilisateur
         </Button>
@@ -448,37 +610,58 @@ function UsersList() {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
-              <TableRow key={user.id}>
-                <TableCell className="font-medium">{user.name}</TableCell>
-                <TableCell className="text-muted-foreground">{user.email}</TableCell>
-                <TableCell>
-                  <Badge variant="outline">{user.role}</Badge>
-                </TableCell>
-                <TableCell>
-                  <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
-                    {user.status === 'active' ? 'Actif' : 'Inactif'}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Modifier</DropdownMenuItem>
-                      <DropdownMenuItem>Permissions</DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">Désactiver</DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+            {loading ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Chargement...
                 </TableCell>
               </TableRow>
-            ))}
+            ) : allUsers.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                  Aucun utilisateur trouvé
+                </TableCell>
+              </TableRow>
+            ) : (
+              allUsers.map((user) => (
+                <TableRow key={user.id}>
+                  <TableCell className="font-medium">{user.name}</TableCell>
+                  <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className="capitalize">{user.role}</Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                      {user.status === 'active' ? 'Actif' : user.status === 'pending' ? 'En attente' : 'Inactif'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Modifier</DropdownMenuItem>
+                        <DropdownMenuItem>Permissions</DropdownMenuItem>
+                        <DropdownMenuItem className="text-destructive">Désactiver</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
           </TableBody>
         </Table>
       </Card>
+
+      <InviteUserDialog 
+        open={showInviteUser} 
+        onOpenChange={setShowInviteUser}
+        tenantId={tenantId}
+        onSuccess={fetchMembers}
+      />
     </motion.div>
   );
 }
