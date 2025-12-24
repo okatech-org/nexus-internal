@@ -1,38 +1,24 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, Building, AppWindow, Settings, Activity, 
-  Users, Shield, LogOut, ChevronDown, ToggleLeft, ToggleRight
-} from 'lucide-react';
+import { ArrowLeft, Building, AppWindow, Settings, Activity } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemo } from '@/contexts/DemoContext';
+import { UserMenu } from '@/components/layout/UserMenu';
 import { cn } from '@/lib/utils';
 
 export default function TenantAdminDashboard() {
   const navigate = useNavigate();
-  const { payload, logout, isTenantAdmin } = useAuth();
-  const { apps, networks } = useDemo();
+  const { payload } = useAuth();
+  const { apps } = useDemo();
   const [activeTab, setActiveTab] = useState('apps');
   
   // Filter apps for current tenant
   const tenantApps = apps.filter(app => app.tenant_id === payload?.tenant_id);
-  
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
   
   return (
     <div className="min-h-screen bg-background">
@@ -57,29 +43,7 @@ export default function TenantAdminDashboard() {
               </div>
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Shield className="w-4 h-4" />
-                  {payload?.sub}
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  Tenant: {payload?.tenant_id}
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/demo-accounts')}>
-                  <Users className="w-4 h-4 mr-2" />
-                  Changer de compte
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu />
           </div>
         </div>
       </header>
