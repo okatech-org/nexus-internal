@@ -5,7 +5,7 @@ import {
   ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell,
   Phone, Video, Users, Clock, CheckCircle, Send, ChevronRight,
   Calendar, Shield, Building2, Radio, PhoneCall, Mail, Trophy, Command, Search,
-  Crown, Target, BarChart3, Gift
+  Crown, Target, BarChart3, Gift, Sparkles, UsersRound
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,9 +25,12 @@ import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { NotificationSettings } from '@/components/gamification/NotificationSettings';
 import { StatsPanel } from '@/components/gamification/StatsPanel';
 import { WeeklyRewardsPanel } from '@/components/gamification/WeeklyRewardsPanel';
+import { MonthlyQuestsPanel } from '@/components/gamification/MonthlyQuestsPanel';
+import { TeamPerformancePanel } from '@/components/gamification/TeamPerformancePanel';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useWeeklyRewards } from '@/hooks/useWeeklyRewards';
+import { useMonthlyQuests } from '@/hooks/useMonthlyQuests';
 import { useActionTracker } from '@/contexts/ActionTrackerContext';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -111,6 +114,7 @@ export default function DelegatedDashboard() {
   const dailyChallenges = useDailyChallenges();
   const notifications = useNotifications();
   const weeklyRewards = useWeeklyRewards(addPoints);
+  const monthlyQuests = useMonthlyQuests(addPoints);
   const actionTracker = useActionTracker();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
@@ -119,6 +123,8 @@ export default function DelegatedDashboard() {
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   const [showStats, setShowStats] = useState(false);
   const [showWeeklyRewards, setShowWeeklyRewards] = useState(false);
+  const [showMonthlyQuests, setShowMonthlyQuests] = useState(false);
+  const [showTeamPerformance, setShowTeamPerformance] = useState(false);
   
   // Auto-connect to realtime on mount
   useEffect(() => {
@@ -430,6 +436,32 @@ export default function DelegatedDashboard() {
                 title="Statistiques"
               >
                 <BarChart3 className="w-5 h-5 text-cyan-500" />
+              </Button>
+              
+              {/* Team Performance Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowTeamPerformance(true)}
+                title="Performance équipe"
+              >
+                <UsersRound className="w-5 h-5 text-blue-500" />
+              </Button>
+              
+              {/* Monthly Quests Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowMonthlyQuests(true)}
+                className="relative"
+                title="Quêtes mensuelles"
+              >
+                <Sparkles className="w-5 h-5 text-purple-500" />
+                {monthlyQuests.claimableCount > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
+                    {monthlyQuests.claimableCount}
+                  </span>
+                )}
               </Button>
               
               {/* Weekly Rewards Button */}
@@ -1010,6 +1042,26 @@ export default function DelegatedDashboard() {
         completedChallengesThisWeek={weeklyRewards.completedChallengesThisWeek}
         onClaimReward={weeklyRewards.claimReward}
         claimedRewards={weeklyRewards.claimedRewards}
+      />
+      
+      {/* Monthly Quests Panel */}
+      <MonthlyQuestsPanel
+        isOpen={showMonthlyQuests}
+        onClose={() => setShowMonthlyQuests(false)}
+        quests={monthlyQuests.quests}
+        onClaimReward={monthlyQuests.claimQuestReward}
+        timeRemaining={monthlyQuests.timeRemaining}
+        completedCount={monthlyQuests.completedCount}
+        claimableCount={monthlyQuests.claimableCount}
+        totalRewardPoints={monthlyQuests.totalRewardPoints}
+        earnedRewardPoints={monthlyQuests.earnedRewardPoints}
+      />
+      
+      {/* Team Performance Panel */}
+      <TeamPerformancePanel
+        isOpen={showTeamPerformance}
+        onClose={() => setShowTeamPerformance(false)}
+        currentUserId={userId || undefined}
       />
       
       {/* Global Search Dialog */}
