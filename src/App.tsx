@@ -7,6 +7,7 @@ import { CommsProvider } from "./contexts/CommsContext";
 import { DemoProvider } from "./contexts/DemoContext";
 import Index from "./pages/Index";
 import Debug from "./pages/Debug";
+import Simulator from "./pages/Simulator";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/debug" element={<Debug />} />
+              <Route path="/simulator" element={<Simulator />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
