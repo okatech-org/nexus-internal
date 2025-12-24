@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, FileText, Plus, Filter, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
 import { CaseList } from './CaseList';
 import { CaseView } from './CaseView';
-import { Case, CaseStatus } from '@/types/correspondance';
+import { Case, CaseStatus, Document } from '@/types/correspondance';
 import { mockCases } from '@/mocks/correspondance.mock';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -78,6 +78,17 @@ export function CorrespondancePanel({ isOpen, onClose }: CorrespondancePanelProp
       return cases.find(c => c.id === caseId) || null;
     });
   };
+  
+  const handleDocumentsAdded = useCallback((caseId: string, documents: Document[]) => {
+    setCases(prev => prev.map(c => {
+      if (c.id !== caseId) return c;
+      return {
+        ...c,
+        documents: [...c.documents, ...documents],
+        updated_at: new Date().toISOString(),
+      };
+    }));
+  }, []);
   
   useEffect(() => {
     if (selectedCase) {
@@ -161,7 +172,11 @@ export function CorrespondancePanel({ isOpen, onClose }: CorrespondancePanelProp
                 </p>
               </div>
             ) : selectedCase ? (
-              <CaseView caseItem={selectedCase} onTransition={handleTransition} />
+              <CaseView 
+                caseItem={selectedCase} 
+                onTransition={handleTransition}
+                onDocumentsAdded={handleDocumentsAdded}
+              />
             ) : (
               <CaseList
                 cases={cases}
