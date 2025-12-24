@@ -21,6 +21,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
 import { useDemo } from '@/contexts/DemoContext';
+import { JwtInspector } from '@/components/debug/JwtInspector';
 import { cn } from '@/lib/utils';
 
 export default function Debug() {
@@ -674,6 +675,16 @@ export default function Debug() {
             <pre className="bg-background/50 rounded-xl p-4 overflow-x-auto text-xs font-mono text-muted-foreground">
               {JSON.stringify(capabilities, null, 2)}
             </pre>
+          </motion.div>
+          
+          {/* JWT Inspector */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+            className="lg:col-span-2"
+          >
+            <JwtInspector />
           </motion.div>
         </div>
       </div>
