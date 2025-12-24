@@ -29,7 +29,9 @@ import {
   MoreVertical,
   Bell,
   Building2,
-  Briefcase
+  Briefcase,
+  Trophy,
+  Command
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -39,7 +41,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { useComms } from '@/contexts/CommsContext';
 import { useRealtime } from '@/hooks/useRealtime';
+import { useGamification } from '@/hooks/useGamification';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { UserMenu } from '@/components/layout/UserMenu';
+import { BadgesPanel } from '@/components/gamification/BadgesPanel';
+import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { cn } from '@/lib/utils';
 
 // Mock data for the dashboard
@@ -132,14 +138,28 @@ export default function ServiceDashboard() {
   const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
   const { events, isConnected, connect, disconnect } = useRealtime();
-  const [searchQuery, setSearchQuery] = useState('');
+  const { stats, badges, unlockedBadges, levelProgress } = useGamification();
+  const globalSearch = useGlobalSearch();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
   
   // Connect to realtime on mount
   useEffect(() => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
+  
+  // Keyboard shortcut for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        globalSearch.toggle();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [globalSearch]);
   
   // Check which modules are enabled
   const hasIcom = hasScope('icom:read') || hasScope('icom:chat:*') || hasScope('icom:call:use');
@@ -179,8 +199,8 @@ export default function ServiceDashboard() {
   const profileConfig = appProfiles[appProfile];
   const ProfileIcon = profileConfig.icon;
   
-  // Calculate stats based on enabled features
-  const stats = {
+  // Calculate dashboard stats based on enabled features
+  const dashboardStats = {
     unreadMessages: hasChat ? 3 : 0,
     missedCalls: hasCall ? 2 : 0,
     upcomingMeetings: hasMeeting ? 3 : 0,
@@ -188,7 +208,7 @@ export default function ServiceDashboard() {
     pendingThreads: hasIboite ? 2 : 0,
   };
   
-  const totalNotifications = stats.unreadMessages + stats.missedCalls + stats.pendingThreads;
+  const totalNotifications = dashboardStats.unreadMessages + dashboardStats.missedCalls + dashboardStats.pendingThreads;
   const recentEvents = events.slice(-5).reverse();
 
   const getCallIcon = (type: string) => {
@@ -235,15 +255,30 @@ export default function ServiceDashboard() {
             </div>
             
             <div className="flex items-center gap-4">
-              <div className="relative hidden md:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Rechercher contacts, appels..." 
-                  className="pl-9 w-64 bg-secondary/50"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                />
-              </div>
+              <Button 
+                variant="outline" 
+                className="hidden md:flex w-64 justify-start text-muted-foreground gap-2"
+                onClick={globalSearch.open}
+              >
+                <Search className="w-4 h-4" />
+                <span>Rechercher...</span>
+                <Badge variant="outline" className="ml-auto text-xs gap-1">
+                  <Command className="w-3 h-3" />K
+                </Badge>
+              </Button>
+              
+              {/* Badges Button */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowBadges(true)}
+                className="relative"
+              >
+                <Trophy className="w-5 h-5 text-amber-500" />
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
+                  {stats.level}
+                </span>
+              </Button>
               
               {/* Notifications */}
               <div className="relative">
@@ -337,7 +372,7 @@ export default function ServiceDashboard() {
                 <PhoneMissed className="w-4 h-4 text-orange-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.missedCalls}</div>
+                <div className="text-2xl font-bold">{dashboardStats.missedCalls}</div>
                 <p className="text-xs text-muted-foreground mt-1">Aujourd'hui</p>
               </CardContent>
             </Card>
@@ -350,7 +385,7 @@ export default function ServiceDashboard() {
                 <Users className="w-4 h-4 text-emerald-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.totalContacts}</div>
+                <div className="text-2xl font-bold">{dashboardStats.totalContacts}</div>
                 <p className="text-xs text-muted-foreground mt-1">{mockContacts.filter(c => c.status === 'online').length} en ligne</p>
               </CardContent>
             </Card>
@@ -363,7 +398,7 @@ export default function ServiceDashboard() {
                 <MessageCircle className="w-4 h-4 text-blue-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.unreadMessages}</div>
+                <div className="text-2xl font-bold">{dashboardStats.unreadMessages}</div>
                 <p className="text-xs text-muted-foreground mt-1">+2 aujourd'hui</p>
               </CardContent>
             </Card>
@@ -376,7 +411,7 @@ export default function ServiceDashboard() {
                 <Video className="w-4 h-4 text-purple-500" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.upcomingMeetings}</div>
+                <div className="text-2xl font-bold">{dashboardStats.upcomingMeetings}</div>
                 <p className="text-xs text-muted-foreground mt-1">Cette semaine</p>
               </CardContent>
             </Card>
@@ -389,7 +424,7 @@ export default function ServiceDashboard() {
                 <Inbox className="w-4 h-4 text-iboite" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.pendingThreads}</div>
+                <div className="text-2xl font-bold">{dashboardStats.pendingThreads}</div>
                 <p className="text-xs text-muted-foreground mt-1">Dont 1 urgent</p>
               </CardContent>
             </Card>
@@ -846,6 +881,32 @@ export default function ServiceDashboard() {
           {isConnected ? 'Notifications temps réel actives' : 'Connexion en cours...'}
         </motion.div>
       </main>
+      
+      {/* Badges Panel */}
+      <BadgesPanel
+        isOpen={showBadges}
+        onClose={() => setShowBadges(false)}
+        badges={badges}
+        stats={stats}
+        levelProgress={levelProgress}
+        unlockedCount={unlockedBadges.length}
+      />
+      
+      {/* Global Search Dialog */}
+      <GlobalSearchDialog
+        isOpen={globalSearch.isOpen}
+        onClose={globalSearch.close}
+        query={globalSearch.query}
+        onQueryChange={globalSearch.setQuery}
+        results={globalSearch.searchResults}
+        resultsByType={globalSearch.resultsByType}
+        activeFilter={globalSearch.activeFilter}
+        onFilterChange={globalSearch.setActiveFilter}
+        onResultClick={() => {
+          globalSearch.close();
+          openCommsCenter();
+        }}
+      />
     </div>
   );
 }
