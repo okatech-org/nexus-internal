@@ -5,7 +5,7 @@ import {
   ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell,
   Phone, Video, Users, Clock, CheckCircle, Send, ChevronRight,
   Calendar, Shield, Building2, Radio, PhoneCall, Mail, Trophy, Command, Search,
-  Crown, Target
+  Crown, Target, BarChart3, Gift
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,8 +23,11 @@ import { Leaderboard } from '@/components/gamification/Leaderboard';
 import { DailyChallengesPanel } from '@/components/gamification/DailyChallengesPanel';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { NotificationSettings } from '@/components/gamification/NotificationSettings';
+import { StatsPanel } from '@/components/gamification/StatsPanel';
+import { WeeklyRewardsPanel } from '@/components/gamification/WeeklyRewardsPanel';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useWeeklyRewards } from '@/hooks/useWeeklyRewards';
 import { useActionTracker } from '@/contexts/ActionTrackerContext';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -103,16 +106,19 @@ export default function DelegatedDashboard() {
   const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
   const { events, isConnected, connect, disconnect } = useRealtime();
-  const { stats, badges, unlockedBadges, levelProgress, celebrationBadge, dismissCelebration, userId } = useGamification();
+  const { stats, badges, unlockedBadges, levelProgress, celebrationBadge, dismissCelebration, userId, addPoints } = useGamification();
   const globalSearch = useGlobalSearch();
   const dailyChallenges = useDailyChallenges();
   const notifications = useNotifications();
+  const weeklyRewards = useWeeklyRewards(addPoints);
   const actionTracker = useActionTracker();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
   const [showNotificationSettings, setShowNotificationSettings] = useState(false);
+  const [showStats, setShowStats] = useState(false);
+  const [showWeeklyRewards, setShowWeeklyRewards] = useState(false);
   
   // Auto-connect to realtime on mount
   useEffect(() => {
@@ -414,6 +420,32 @@ export default function DelegatedDashboard() {
                 onClick={() => globalSearch.open()}
               >
                 <Search className="w-5 h-5" />
+              </Button>
+              
+              {/* Stats Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowStats(true)}
+                title="Statistiques"
+              >
+                <BarChart3 className="w-5 h-5 text-cyan-500" />
+              </Button>
+              
+              {/* Weekly Rewards Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowWeeklyRewards(true)}
+                className="relative"
+                title="Récompenses hebdo"
+              >
+                <Gift className="w-5 h-5 text-pink-500" />
+                {weeklyRewards.challengeStreak > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
+                    {weeklyRewards.challengeStreak}
+                  </span>
+                )}
               </Button>
               
               {/* Daily Challenges Button */}
@@ -961,6 +993,23 @@ export default function DelegatedDashboard() {
         settings={notifications.settings}
         onRequestPermission={notifications.requestPermission}
         onUpdateSettings={notifications.updateSettings}
+      />
+      
+      {/* Stats Panel */}
+      <StatsPanel
+        isOpen={showStats}
+        onClose={() => setShowStats(false)}
+        stats={stats}
+      />
+      
+      {/* Weekly Rewards Panel */}
+      <WeeklyRewardsPanel
+        isOpen={showWeeklyRewards}
+        onClose={() => setShowWeeklyRewards(false)}
+        currentStreak={weeklyRewards.challengeStreak}
+        completedChallengesThisWeek={weeklyRewards.completedChallengesThisWeek}
+        onClaimReward={weeklyRewards.claimReward}
+        claimedRewards={weeklyRewards.claimedRewards}
       />
       
       {/* Global Search Dialog */}
