@@ -11,7 +11,11 @@ import {
   Brain,
   FileText,
   Send,
-  Plus
+  Plus,
+  Grid3X3,
+  Check,
+  X,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -560,9 +564,174 @@ function AppPanel({ panelId, title, profile, onProfileChange, otherProfile }: Ap
   );
 }
 
+// Policies Matrix Component
+const REALMS = ['government', 'business', 'citizen', 'platform'] as const;
+const NETWORK_TYPES = ['government', 'commercial'] as const;
+
+interface PolicyRule {
+  allowed: boolean;
+  modules: string[];
+  note?: string;
+}
+
+// Policy matrix: [sourceRealm][targetRealm][networkType] -> PolicyRule
+function getPolicyRule(sourceRealm: string, targetRealm: string, networkType: string): PolicyRule {
+  // Government network rules
+  if (networkType === 'government') {
+    // Platform admin can communicate with all
+    if (sourceRealm === 'platform' || targetRealm === 'platform') {
+      return { allowed: true, modules: ['iCom', 'iBoîte', 'iAsted', 'iCorr'] };
+    }
+    // Government ↔ Government: full access
+    if (sourceRealm === 'government' && targetRealm === 'government') {
+      return { allowed: true, modules: ['iCom', 'iBoîte', 'iAsted', 'iCorr'] };
+    }
+    // Government ↔ Business: limited
+    if ((sourceRealm === 'government' && targetRealm === 'business') ||
+        (sourceRealm === 'business' && targetRealm === 'government')) {
+      return { allowed: true, modules: ['iCom', 'iBoîte'], note: 'No iCorrespondance' };
+    }
+    // Government ↔ Citizen: public services
+    if ((sourceRealm === 'government' && targetRealm === 'citizen') ||
+        (sourceRealm === 'citizen' && targetRealm === 'government')) {
+      return { allowed: true, modules: ['iCom', 'iBoîte', 'iCorr'], note: 'Public services' };
+    }
+    // Business ↔ Business on gov network: not typical
+    if (sourceRealm === 'business' && targetRealm === 'business') {
+      return { allowed: false, modules: [], note: 'Use commercial network' };
+    }
+    // Citizen ↔ Citizen: not allowed on gov network
+    if (sourceRealm === 'citizen' && targetRealm === 'citizen') {
+      return { allowed: false, modules: [], note: 'P2P not allowed' };
+    }
+    // Citizen ↔ Business: not on gov network
+    if ((sourceRealm === 'citizen' && targetRealm === 'business') ||
+        (sourceRealm === 'business' && targetRealm === 'citizen')) {
+      return { allowed: false, modules: [], note: 'Use commercial network' };
+    }
+  }
+  
+  // Commercial network rules
+  if (networkType === 'commercial') {
+    // Platform admin can communicate with all
+    if (sourceRealm === 'platform' || targetRealm === 'platform') {
+      return { allowed: true, modules: ['iCom', 'iBoîte', 'iAsted'], note: 'No iCorr on commercial' };
+    }
+    // No iCorrespondance on commercial
+    // Business ↔ Business: full commercial access
+    if (sourceRealm === 'business' && targetRealm === 'business') {
+      return { allowed: true, modules: ['iCom', 'iBoîte', 'iAsted'] };
+    }
+    // Business ↔ Citizen: customer service
+    if ((sourceRealm === 'business' && targetRealm === 'citizen') ||
+        (sourceRealm === 'citizen' && targetRealm === 'business')) {
+      return { allowed: true, modules: ['iCom', 'iBoîte'], note: 'Customer service' };
+    }
+    // Citizen ↔ Citizen: limited P2P
+    if (sourceRealm === 'citizen' && targetRealm === 'citizen') {
+      return { allowed: true, modules: ['iCom'], note: 'P2P messaging only' };
+    }
+    // Government on commercial: typically not present
+    if (sourceRealm === 'government' || targetRealm === 'government') {
+      return { allowed: false, modules: [], note: 'Gov uses gov network' };
+    }
+  }
+  
+  return { allowed: false, modules: [] };
+}
+
+function PoliciesMatrix() {
+  return (
+    <Card className="shrink-0">
+      <CardHeader className="py-3">
+        <div className="flex items-center gap-2">
+          <Grid3X3 className="w-4 h-4 text-primary" />
+          <CardTitle className="text-sm">Realm Communication Policies</CardTitle>
+        </div>
+      </CardHeader>
+      <CardContent className="pt-0">
+        <div className="grid grid-cols-2 gap-4">
+          {NETWORK_TYPES.map(networkType => (
+            <div key={networkType} className="space-y-2">
+              <div className={cn(
+                "text-xs font-medium px-2 py-1 rounded text-center",
+                networkType === 'government' 
+                  ? "bg-blue-500/20 text-blue-400" 
+                  : "bg-amber-500/20 text-amber-400"
+              )}>
+                {networkType.charAt(0).toUpperCase() + networkType.slice(1)} Network
+              </div>
+              
+              <div className="text-[10px]">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr>
+                      <th className="p-1 text-left text-muted-foreground">From \ To</th>
+                      {REALMS.map(realm => (
+                        <th key={realm} className="p-1 text-center text-muted-foreground">
+                          {realm.slice(0, 3)}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {REALMS.map(sourceRealm => (
+                      <tr key={sourceRealm}>
+                        <td className="p-1 font-medium">{sourceRealm.slice(0, 3)}</td>
+                        {REALMS.map(targetRealm => {
+                          const rule = getPolicyRule(sourceRealm, targetRealm, networkType);
+                          return (
+                            <td 
+                              key={targetRealm} 
+                              className="p-1 text-center"
+                              title={rule.note || rule.modules.join(', ')}
+                            >
+                              {rule.allowed ? (
+                                <div className="flex flex-col items-center">
+                                  <Check className="w-3 h-3 text-emerald-400" />
+                                  <span className="text-[8px] text-muted-foreground">
+                                    {rule.modules.length}
+                                  </span>
+                                </div>
+                              ) : (
+                                <X className="w-3 h-3 text-destructive mx-auto" />
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+        
+        {/* Legend */}
+        <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
+          <div className="flex items-center gap-1">
+            <Check className="w-3 h-3 text-emerald-400" />
+            <span>Allowed (hover for modules)</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <X className="w-3 h-3 text-destructive" />
+            <span>Not allowed</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3 text-amber-400" />
+            <span>iCorr = Government only</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Simulator() {
   const [app1Profile, setApp1Profile] = useState<DemoAccount | null>(null);
   const [app2Profile, setApp2Profile] = useState<DemoAccount | null>(null);
+  const [showPolicies, setShowPolicies] = useState(false);
   
   const handleSetBothToNetwork = (networkType: 'government' | 'commercial') => {
     const govProfiles = demoAccounts.filter(a => a.network_type === networkType);
@@ -605,12 +774,20 @@ export default function Simulator() {
             
             <div className="flex items-center gap-2">
               <Button 
+                variant={showPolicies ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setShowPolicies(!showPolicies)}
+              >
+                <Grid3X3 className="w-4 h-4 mr-2" />
+                Policies
+              </Button>
+              <Button 
                 variant="outline" 
                 size="sm"
                 onClick={() => handleSetBothToNetwork('government')}
               >
                 <Network className="w-4 h-4 mr-2" />
-                Both to Gov Network
+                Both to Gov
               </Button>
               <Button 
                 variant="outline" 
@@ -626,12 +803,19 @@ export default function Simulator() {
                 onClick={handleResetData}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
-                Reset Data
+                Reset
               </Button>
             </div>
           </div>
         </div>
       </header>
+      
+      {/* Policies Matrix */}
+      {showPolicies && (
+        <div className="container mx-auto px-6 pt-4">
+          <PoliciesMatrix />
+        </div>
+      )}
       
       {/* Main Content */}
       <main className="flex-1 container mx-auto px-6 py-6 flex gap-6 overflow-hidden">
