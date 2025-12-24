@@ -10,8 +10,22 @@
     "realm": "platform",
     "actor_id": "platform-admin",
     "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": ["manage_apps", "manage_networks", "manage_modules", "view_all_tenants"],
-    "description": "Full platform access - can manage apps, networks, and modules"
+    "permissions": ["platform:*", "registry:*", "networks:*", "modules:*", "audit:read", "icom:*", "iboite:*", "iasted:*", "icorrespondance:*"],
+    "description": "Full platform access - manage apps, networks, modules, and audit logs"
+  },
+  {
+    "id": "tenant_admin_ministry",
+    "label": "Tenant Admin",
+    "mode": "tenant_admin",
+    "app_id": "ministry-admin",
+    "tenant_id": "ministry-1",
+    "network": "gov-net-1",
+    "network_type": "government",
+    "realm": "government",
+    "actor_id": "tenant-admin-001",
+    "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
+    "permissions": ["tenant:*", "apps:read", "modules:write", "audit:read", "icom:*", "iboite:*", "iasted:*", "icorrespondance:read"],
+    "description": "Tenant administration - manage tenant apps, modules and view audit"
   },
   {
     "id": "service_gov_app",
@@ -24,8 +38,8 @@
     "realm": "government",
     "actor_id": null,
     "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": [],
-    "description": "Government app service account - full module access"
+    "permissions": ["icom:read", "icom:write", "iboite:read", "iboite:write", "iasted:chat", "iasted:summarize", "icorrespondance:read", "icorrespondance:write", "icorrespondance:approve"],
+    "description": "Government app service account - full module access including iCorrespondance"
   },
   {
     "id": "service_commercial_app",
@@ -38,8 +52,8 @@
     "realm": "business",
     "actor_id": null,
     "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": false },
-    "permissions": [],
-    "description": "Commercial app service account - no iCorrespondance access"
+    "permissions": ["icom:read", "icom:write", "iboite:read", "iboite:write", "iasted:chat", "iasted:summarize"],
+    "description": "Commercial app service account - no iCorrespondance (gov-only module)"
   },
   {
     "id": "delegated_citizen",
@@ -52,8 +66,8 @@
     "realm": "citizen",
     "actor_id": "citizen-001",
     "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": false },
-    "permissions": [],
-    "description": "Citizen accessing via idn.ga-like client app"
+    "permissions": ["icom:read", "icom:write", "iboite:read", "iboite:write", "iasted:chat"],
+    "description": "Citizen accessing via idn.ga-like client app - basic communication access"
   },
   {
     "id": "delegated_gov_agent",
@@ -66,7 +80,7 @@
     "realm": "government",
     "actor_id": "agent-007",
     "desired_modules": { "icom": true, "iboite": true, "iasted": true, "icorrespondance": true },
-    "permissions": [],
-    "description": "Government agent accessing via official gov app"
+    "permissions": ["icom:*", "iboite:*", "iasted:*", "icorrespondance:read", "icorrespondance:write"],
+    "description": "Government agent accessing via official gov app - full access with iCorrespondance"
   }
 ]
