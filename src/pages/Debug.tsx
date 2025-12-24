@@ -12,11 +12,15 @@ import {
   AppWindow,
   User,
   Bot,
-  AlertTriangle
+  AlertTriangle,
+  Users,
+  Crown,
+  Building
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { cn } from '@/lib/utils';
 
 export default function Debug() {
@@ -33,6 +37,13 @@ export default function Debug() {
     bootstrap, 
     isLoading 
   } = useComms();
+  
+  const {
+    activeProfile,
+    effectiveModules,
+    isPlatformAdmin,
+    isTenantAdmin,
+  } = useDemo();
   
   const [delegatedActorInput, setDelegatedActorInput] = useState(appContext.delegated_actor_id || '');
   const [delegatedRealmInput, setDelegatedRealmInput] = useState<'citizen' | 'government' | 'business'>(
@@ -498,6 +509,156 @@ export default function Debug() {
                     {appContext.mode === 'delegated' ? ' a <strong>government realm</strong> actor' : ' government realm when in delegated mode'}.
                   </p>
                 </div>
+              </div>
+            )}
+          </motion.div>
+          
+          {/* Demo Profile & Effective Modules Table */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.45 }}
+            className="glass rounded-2xl p-6 lg:col-span-2"
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center">
+                <Users className="w-5 h-5 text-amber-400" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-foreground">Demo Profile State</h2>
+                <p className="text-xs text-muted-foreground">
+                  Active demo profile configuration & effective modules
+                </p>
+              </div>
+            </div>
+            
+            {activeProfile ? (
+              <div className="space-y-6">
+                {/* Active Profile Info */}
+                <div className="p-4 rounded-xl bg-primary/10 border border-primary/20">
+                  <div className="flex items-center gap-3 mb-4">
+                    {isPlatformAdmin && <Crown className="w-5 h-5 text-amber-400" />}
+                    {isTenantAdmin && <Building className="w-5 h-5 text-blue-400" />}
+                    {!isPlatformAdmin && !isTenantAdmin && <User className="w-5 h-5 text-primary" />}
+                    <div>
+                      <h3 className="font-medium text-foreground">{activeProfile.label}</h3>
+                      <p className="text-xs text-muted-foreground">{activeProfile.description}</p>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                    <div className="p-2 rounded-lg bg-background/50">
+                      <div className="text-[10px] text-muted-foreground">App ID</div>
+                      <div className="text-xs font-mono text-foreground truncate">{activeProfile.app_id}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-background/50">
+                      <div className="text-[10px] text-muted-foreground">Tenant</div>
+                      <div className="text-xs font-mono text-foreground">{activeProfile.tenant_id}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-background/50">
+                      <div className="text-[10px] text-muted-foreground">Network Type</div>
+                      <div className={cn(
+                        "text-xs font-medium",
+                        activeProfile.network_type === 'government' ? "text-blue-400" : "text-amber-400"
+                      )}>
+                        {activeProfile.network_type}
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-background/50">
+                      <div className="text-[10px] text-muted-foreground">Realm</div>
+                      <div className="text-xs text-foreground">{activeProfile.realm}</div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-background/50">
+                      <div className="text-[10px] text-muted-foreground">Mode</div>
+                      <div className={cn(
+                        "text-xs font-medium",
+                        activeProfile.mode === 'delegated' ? "text-purple-400" : 
+                        activeProfile.mode === 'platform_admin' ? "text-amber-400" :
+                        activeProfile.mode === 'tenant_admin' ? "text-blue-400" : "text-emerald-400"
+                      )}>
+                        {activeProfile.mode}
+                      </div>
+                    </div>
+                    <div className="p-2 rounded-lg bg-background/50">
+                      <div className="text-[10px] text-muted-foreground">Network</div>
+                      <div className="text-xs font-mono text-foreground">{activeProfile.network || 'N/A'}</div>
+                    </div>
+                    {activeProfile.actor_id && (
+                      <div className="p-2 rounded-lg bg-background/50 col-span-2">
+                        <div className="text-[10px] text-muted-foreground">Actor ID</div>
+                        <div className="text-xs font-mono text-purple-400">{activeProfile.actor_id}</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Effective Modules Table */}
+                <div>
+                  <h4 className="text-sm font-medium text-foreground mb-3">Effective Modules (with reasons)</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b border-border">
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Module</th>
+                          <th className="text-center py-2 px-3 text-muted-foreground font-medium">Status</th>
+                          <th className="text-left py-2 px-3 text-muted-foreground font-medium">Disabled Reason</th>
+                          <th className="text-center py-2 px-3 text-muted-foreground font-medium">Desired</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {effectiveModules.map(mod => (
+                          <tr key={mod.name} className="border-b border-border/50">
+                            <td className="py-2 px-3 font-medium text-foreground">{mod.name}</td>
+                            <td className="py-2 px-3 text-center">
+                              {mod.enabled ? (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-success/20 text-success text-xs">
+                                  <CheckCircle className="w-3 h-3" />
+                                  Enabled
+                                </span>
+                              ) : (
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-destructive/20 text-destructive text-xs">
+                                  <XCircle className="w-3 h-3" />
+                                  Disabled
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3">
+                              {mod.disabled_reason ? (
+                                <span className="inline-flex items-center gap-1 text-xs text-warning">
+                                  <AlertTriangle className="w-3 h-3" />
+                                  {mod.disabled_reason}
+                                </span>
+                              ) : (
+                                <span className="text-xs text-muted-foreground">—</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-center">
+                              {activeProfile.desired_modules[mod.name] ? (
+                                <CheckCircle className="w-4 h-4 text-success mx-auto" />
+                              ) : (
+                                <XCircle className="w-4 h-4 text-muted-foreground mx-auto" />
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                
+                {/* Calculation Legend */}
+                <div className="p-3 rounded-lg bg-secondary/30 text-xs text-muted-foreground">
+                  <strong>Effective = </strong>
+                  desired(app/profile) ∩ policy(network_type) ∩ constraint(realm) ∩ entitlements
+                  <br />
+                  <span className="text-warning">iCorrespondance</span> requires: network_type=government AND realm=government
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-muted-foreground">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No demo profile selected</p>
+                <p className="text-xs mt-1">Use the "Demo Accounts" button in the header to select a profile</p>
               </div>
             )}
           </motion.div>
