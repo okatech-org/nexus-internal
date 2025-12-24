@@ -29,7 +29,15 @@ import {
   RotateCcw,
   Archive,
   Eye,
-  EyeOff
+  EyeOff,
+  LayoutGrid,
+  LayoutList,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  ChevronLeft,
+  ChevronRight,
+  BarChart3
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -98,11 +106,48 @@ function DashboardOverview() {
   const { apps } = useDemo();
   const [showCreateApp, setShowCreateApp] = useState(false);
   const [showInviteUser, setShowInviteUser] = useState(false);
+  const [dbApps, setDbApps] = useState<Application[]>([]);
+  const [loadingApps, setLoadingApps] = useState(true);
   
   const tenantApps = apps.filter(app => app.tenant_id === payload?.tenant_id);
+
+  // Fetch apps from database
+  useEffect(() => {
+    const fetchApps = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('applications')
+          .select(`
+            *,
+            module_settings (*)
+          `)
+          .neq('status', 'deleted')
+          .order('created_at', { ascending: false });
+
+        if (error) throw error;
+        setDbApps(data || []);
+      } catch (error) {
+        console.error('Error fetching applications:', error);
+      } finally {
+        setLoadingApps(false);
+      }
+    };
+    fetchApps();
+  }, []);
+
+  // Mock usage stats per app - in production, fetch from usage_metrics table
+  const getAppStats = (appId: string) => {
+    // Simulated stats based on app ID hash
+    const hash = appId.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a; }, 0);
+    return {
+      users: Math.abs(hash % 50) + 5,
+      messages: Math.abs((hash * 7) % 500) + 20,
+      activity: Math.abs((hash * 13) % 40) + 60
+    };
+  };
   
   const stats = [
-    { label: 'Applications', value: tenantApps.length, icon: AppWindow, change: '+2 ce mois' },
+    { label: 'Applications', value: dbApps.length || tenantApps.length, icon: AppWindow, change: '+2 ce mois' },
     { label: 'Utilisateurs actifs', value: 24, icon: Users, change: '+5 cette semaine' },
     { label: 'Messages envoyés', value: 156, icon: MessageCircle, change: '+23 aujourd\'hui' },
     { label: 'Taux d\'activité', value: '92%', icon: TrendingUp, change: '+3%' },
@@ -117,6 +162,23 @@ function DashboardOverview() {
 
   // Mock tenant ID - in real app, would come from auth context
   const tenantId = payload?.tenant_id || 'demo-tenant';
+
+  // Combine DB apps with demo apps for display
+  const displayApps = dbApps.length > 0 ? dbApps : tenantApps.map(app => ({
+    id: app.app_id,
+    name: app.name,
+    description: null,
+    app_id: app.app_id,
+    status: app.status,
+    network_type: 'intranet',
+    created_at: new Date().toISOString(),
+    module_settings: Object.entries(app.enabled_modules).map(([name, enabled]) => ({
+      id: name,
+      module_name: name,
+      enabled: enabled as boolean,
+      settings: {}
+    }))
+  }));
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
@@ -140,6 +202,106 @@ function DashboardOverview() {
 
       {/* Usage Metrics Chart */}
       <UsageMetricsChart tenantName={payload?.tenant_id} />
+
+      {/* Applications Stats */}
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <BarChart3 className="w-5 h-5" />
+            Statistiques par application
+          </CardTitle>
+          <CardDescription>
+            Aperçu de l'utilisation de chaque application
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingApps ? (
+            <div className="flex items-center justify-center py-8">
+              <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : displayApps.length > 0 ? (
+            <div className="space-y-4">
+              {displayApps.slice(0, 5).map((app) => {
+                const appStats = getAppStats(app.id);
+                const enabledModules = app.module_settings?.filter(m => m.enabled).length || 0;
+                
+                return (
+                  <div 
+                    key={app.id} 
+                    className="flex items-center gap-4 p-4 rounded-lg border border-border/50 hover:border-primary/30 transition-colors"
+                  >
+                    <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                      <AppWindow className="w-5 h-5 text-primary" />
+                    </div>
+                    
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2">
+                        <Link 
+                          to={`/admin/tenant/apps/${app.id}`}
+                          className="font-medium text-foreground hover:text-primary transition-colors truncate"
+                        >
+                          {app.name}
+                        </Link>
+                        <Badge variant={app.status === 'active' ? 'default' : 'secondary'} className="shrink-0">
+                          {app.status === 'active' ? 'Actif' : 'Inactif'}
+                        </Badge>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {enabledModules} module{enabledModules > 1 ? 's' : ''} actif{enabledModules > 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-6 text-center">
+                      <div>
+                        <div className="text-lg font-semibold text-foreground">{appStats.users}</div>
+                        <div className="text-xs text-muted-foreground">Utilisateurs</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-foreground">{appStats.messages}</div>
+                        <div className="text-xs text-muted-foreground">Messages</div>
+                      </div>
+                      <div>
+                        <div className="text-lg font-semibold text-foreground">{appStats.activity}%</div>
+                        <div className="text-xs text-muted-foreground">Activité</div>
+                      </div>
+                    </div>
+                    
+                    <Link to={`/admin/tenant/apps/${app.id}`}>
+                      <Button variant="ghost" size="icon">
+                        <ExternalLink className="w-4 h-4" />
+                      </Button>
+                    </Link>
+                  </div>
+                );
+              })}
+              
+              {displayApps.length > 5 && (
+                <div className="text-center pt-2">
+                  <Link to="/admin/tenant/apps">
+                    <Button variant="outline" size="sm">
+                      Voir toutes les applications ({displayApps.length})
+                    </Button>
+                  </Link>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-muted-foreground">
+              <AppWindow className="w-12 h-12 mx-auto mb-3 opacity-50" />
+              <p>Aucune application</p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-3"
+                onClick={() => setShowCreateApp(true)}
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Créer une application
+              </Button>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Quick Actions */}
@@ -212,6 +374,17 @@ function AppsList() {
   const [hardDeleting, setHardDeleting] = useState<string | null>(null);
   const [appToDelete, setAppToDelete] = useState<Application | null>(null);
   
+  // View mode: 'cards' or 'table'
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
+  
+  // Sorting
+  const [sortField, setSortField] = useState<'name' | 'status' | 'created_at' | 'network_type'>('created_at');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  
   const tenantId = payload?.tenant_id || 'demo-tenant';
 
   const fetchApps = useCallback(async () => {
@@ -277,6 +450,16 @@ function AppsList() {
     }
   };
 
+  const handleSort = (field: typeof sortField) => {
+    if (sortField === field) {
+      setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortDirection('asc');
+    }
+    setCurrentPage(1);
+  };
+
   // Combine mock apps with DB apps for demo
   const tenantApps = apps.filter(app => 
     app.tenant_id === payload?.tenant_id &&
@@ -318,6 +501,33 @@ function AppsList() {
     }))
   }))];
 
+  // Sort apps
+  const sortedApps = [...allApps].sort((a, b) => {
+    let comparison = 0;
+    switch (sortField) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'status':
+        comparison = a.status.localeCompare(b.status);
+        break;
+      case 'created_at':
+        comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
+        break;
+      case 'network_type':
+        comparison = a.network_type.localeCompare(b.network_type);
+        break;
+    }
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
+
+  // Pagination
+  const totalPages = Math.ceil(sortedApps.length / itemsPerPage);
+  const paginatedApps = sortedApps.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const statusOptions = [
     { value: 'all', label: 'Tous', count: statusCounts.all },
     { value: 'active', label: 'Actif', count: statusCounts.active },
@@ -344,6 +554,22 @@ function AppsList() {
     }
   };
 
+  const getNetworkTypeLabel = (type: string) => {
+    switch(type) {
+      case 'intranet': return 'Intranet';
+      case 'extranet': return 'Extranet';
+      case 'internet': return 'Internet';
+      default: return type;
+    }
+  };
+
+  const SortIcon = ({ field }: { field: typeof sortField }) => {
+    if (sortField !== field) return <ArrowUpDown className="w-4 h-4 ml-1" />;
+    return sortDirection === 'asc' 
+      ? <ArrowUp className="w-4 h-4 ml-1" /> 
+      : <ArrowDown className="w-4 h-4 ml-1" />;
+  };
+
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
       {/* Filters Row */}
@@ -355,7 +581,7 @@ function AppsList() {
               placeholder="Rechercher une application..." 
               className="pl-9"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
           
@@ -366,7 +592,7 @@ function AppsList() {
                 key={option.value}
                 variant={statusFilter === option.value ? "secondary" : "ghost"}
                 size="sm"
-                onClick={() => setStatusFilter(option.value)}
+                onClick={() => { setStatusFilter(option.value); setCurrentPage(1); }}
                 className="gap-1.5 h-8"
               >
                 {option.label}
@@ -392,6 +618,7 @@ function AppsList() {
               onClick={() => {
                 setShowDeleted(!showDeleted);
                 if (!showDeleted) setStatusFilter('all');
+                setCurrentPage(1);
               }}
               className="gap-2"
             >
@@ -405,6 +632,25 @@ function AppsList() {
           )}
         </div>
         <div className="flex gap-2">
+          {/* View Mode Toggle */}
+          <div className="flex items-center border border-border rounded-lg p-1">
+            <Button 
+              variant={viewMode === 'cards' ? 'secondary' : 'ghost'} 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setViewMode('cards')}
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </Button>
+            <Button 
+              variant={viewMode === 'table' ? 'secondary' : 'ghost'} 
+              size="icon" 
+              className="h-8 w-8"
+              onClick={() => setViewMode('table')}
+            >
+              <LayoutList className="w-4 h-4" />
+            </Button>
+          </div>
           <Button variant="outline" size="icon" onClick={fetchApps}>
             <RefreshCw className={cn("w-4 h-4", loading && "animate-spin")} />
           </Button>
@@ -415,141 +661,369 @@ function AppsList() {
         </div>
       </div>
 
-      <div className="grid gap-4">
-        {allApps.length > 0 ? allApps.map((app) => {
-          const isDeleted = app.status === 'deleted';
-          
-          return (
-            <Card 
-              key={app.app_id} 
-              className={cn(
-                "bg-card/50 border-border/50 transition-colors",
-                isDeleted 
-                  ? "opacity-60 border-destructive/20" 
-                  : "hover:border-primary/30"
-              )}
-            >
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  {isDeleted ? (
-                    <div className="flex items-center gap-3 flex-1">
-                      <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
-                        <Archive className="w-5 h-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-muted-foreground line-through">
-                          {app.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
-                      </div>
-                    </div>
-                  ) : (
-                    <Link 
-                      to={`/admin/tenant/apps/${app.id}`}
-                      className="flex items-center gap-3 flex-1 group"
-                    >
-                      <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                        <AppWindow className="w-5 h-5 text-primary" />
-                      </div>
-                      <div>
-                        <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
-                          {app.name}
-                        </h3>
-                        <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
-                      </div>
-                    </Link>
-                  )}
-                  
-                  <div className="flex items-center gap-3">
-                    <Badge variant={getStatusVariant(app.status)}>
-                      {getStatusLabel(app.status)}
-                    </Badge>
-                    
-                    {isDeleted ? (
-                      <div className="flex items-center gap-2">
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleRestore(app.id)}
-                          disabled={restoring === app.id}
-                          className="gap-2"
-                        >
-                          {restoring === app.id ? (
-                            <RefreshCw className="w-4 h-4 animate-spin" />
+      {/* Table View */}
+      {viewMode === 'table' ? (
+        <Card className="bg-card/50 border-border/50">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead 
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('name')}
+                >
+                  <div className="flex items-center">
+                    Nom <SortIcon field="name" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center">
+                    Statut <SortIcon field="status" />
+                  </div>
+                </TableHead>
+                <TableHead 
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('network_type')}
+                >
+                  <div className="flex items-center">
+                    Réseau <SortIcon field="network_type" />
+                  </div>
+                </TableHead>
+                <TableHead>Modules</TableHead>
+                <TableHead 
+                  className="cursor-pointer select-none hover:bg-muted/50"
+                  onClick={() => handleSort('created_at')}
+                >
+                  <div className="flex items-center">
+                    Créé le <SortIcon field="created_at" />
+                  </div>
+                </TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedApps.length > 0 ? paginatedApps.map((app) => {
+                const isDeleted = app.status === 'deleted';
+                return (
+                  <TableRow key={app.app_id} className={cn(isDeleted && "opacity-60")}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className={cn(
+                          "w-8 h-8 rounded-lg flex items-center justify-center",
+                          isDeleted ? "bg-muted" : "bg-primary/20"
+                        )}>
+                          {isDeleted 
+                            ? <Archive className="w-4 h-4 text-muted-foreground" />
+                            : <AppWindow className="w-4 h-4 text-primary" />
+                          }
+                        </div>
+                        <div>
+                          {isDeleted ? (
+                            <span className="font-medium text-muted-foreground line-through">{app.name}</span>
                           ) : (
-                            <RotateCcw className="w-4 h-4" />
+                            <Link 
+                              to={`/admin/tenant/apps/${app.id}`}
+                              className="font-medium text-foreground hover:text-primary transition-colors"
+                            >
+                              {app.name}
+                            </Link>
                           )}
-                          Restaurer
-                        </Button>
-                        <Button 
-                          variant="destructive" 
-                          size="sm"
-                          onClick={() => setAppToDelete(app as Application)}
-                          className="gap-2"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                          Supprimer
-                        </Button>
+                          <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusVariant(app.status)}>
+                        {getStatusLabel(app.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className="capitalize">
+                        {getNetworkTypeLabel(app.network_type)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex gap-1 flex-wrap">
+                        {app.module_settings?.slice(0, 3).map((mod) => (
+                          <span 
+                            key={mod.module_name}
+                            className={cn(
+                              "px-1.5 py-0.5 rounded text-xs",
+                              mod.enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                            )}
+                          >
+                            {mod.module_name}
+                          </span>
+                        ))}
+                        {app.module_settings && app.module_settings.length > 3 && (
+                          <span className="text-xs text-muted-foreground">
+                            +{app.module_settings.length - 3}
+                          </span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-muted-foreground">
+                      {new Date(app.created_at).toLocaleDateString('fr-FR')}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {isDeleted ? (
+                        <div className="flex items-center justify-end gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRestore(app.id)}
+                            disabled={restoring === app.id}
+                          >
+                            {restoring === app.id ? (
+                              <RefreshCw className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-3 h-3" />
+                            )}
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => setAppToDelete(app as Application)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/admin/tenant/apps/${app.id}`}>
+                                <Settings className="w-4 h-4 mr-2" />
+                                Configurer
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/admin/tenant/apps/${app.id}#modules`}>
+                                <Layers className="w-4 h-4 mr-2" />
+                                Modules
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                );
+              }) : (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-12 text-muted-foreground">
+                    {loading ? 'Chargement...' : 
+                     statusFilter !== 'all' ? `Aucune application ${getStatusLabel(statusFilter).toLowerCase()} trouvée` :
+                     showDeleted ? 'Aucune application trouvée' : 
+                     'Aucune application active trouvée'}
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Card>
+      ) : (
+        /* Card View */
+        <div className="grid gap-4">
+          {paginatedApps.length > 0 ? paginatedApps.map((app) => {
+            const isDeleted = app.status === 'deleted';
+            
+            return (
+              <Card 
+                key={app.app_id} 
+                className={cn(
+                  "bg-card/50 border-border/50 transition-colors",
+                  isDeleted 
+                    ? "opacity-60 border-destructive/20" 
+                    : "hover:border-primary/30"
+                )}
+              >
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    {isDeleted ? (
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center">
+                          <Archive className="w-5 h-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-muted-foreground line-through">
+                            {app.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
+                        </div>
                       </div>
                     ) : (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreVertical className="w-4 h-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem asChild>
-                            <Link to={`/admin/tenant/apps/${app.id}`}>
-                              <Settings className="w-4 h-4 mr-2" />
-                              Configurer
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem asChild>
-                            <Link to={`/admin/tenant/apps/${app.id}#modules`}>
-                              <Layers className="w-4 h-4 mr-2" />
-                              Modules
-                            </Link>
-                          </DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">
-                            <Trash2 className="w-4 h-4 mr-2" />
-                            Supprimer
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-                  </div>
-                </div>
-                
-                {!isDeleted && (
-                  <div className="mt-4 flex gap-2">
-                    {app.module_settings?.map((mod) => (
-                      <span 
-                        key={mod.module_name}
-                        className={cn(
-                          "px-2 py-0.5 rounded text-xs",
-                          mod.enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
-                        )}
+                      <Link 
+                        to={`/admin/tenant/apps/${app.id}`}
+                        className="flex items-center gap-3 flex-1 group"
                       >
-                        {mod.module_name}
-                      </span>
-                    ))}
+                        <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                          <AppWindow className="w-5 h-5 text-primary" />
+                        </div>
+                        <div>
+                          <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+                            {app.name}
+                          </h3>
+                          <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
+                        </div>
+                      </Link>
+                    )}
+                    
+                    <div className="flex items-center gap-3">
+                      <Badge variant={getStatusVariant(app.status)}>
+                        {getStatusLabel(app.status)}
+                      </Badge>
+                      
+                      {isDeleted ? (
+                        <div className="flex items-center gap-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleRestore(app.id)}
+                            disabled={restoring === app.id}
+                            className="gap-2"
+                          >
+                            {restoring === app.id ? (
+                              <RefreshCw className="w-4 h-4 animate-spin" />
+                            ) : (
+                              <RotateCcw className="w-4 h-4" />
+                            )}
+                            Restaurer
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            onClick={() => setAppToDelete(app as Application)}
+                            className="gap-2"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Supprimer
+                          </Button>
+                        </div>
+                      ) : (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem asChild>
+                              <Link to={`/admin/tenant/apps/${app.id}`}>
+                                <Settings className="w-4 h-4 mr-2" />
+                                Configurer
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem asChild>
+                              <Link to={`/admin/tenant/apps/${app.id}#modules`}>
+                                <Layers className="w-4 h-4 mr-2" />
+                                Modules
+                              </Link>
+                            </DropdownMenuItem>
+                            <DropdownMenuItem className="text-destructive">
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Supprimer
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
                   </div>
-                )}
+                  
+                  {!isDeleted && (
+                    <div className="mt-4 flex gap-2">
+                      {app.module_settings?.map((mod) => (
+                        <span 
+                          key={mod.module_name}
+                          className={cn(
+                            "px-2 py-0.5 rounded text-xs",
+                            mod.enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                          )}
+                        >
+                          {mod.module_name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            );
+          }) : (
+            <Card className="bg-card/50 border-border/50">
+              <CardContent className="py-12 text-center text-muted-foreground">
+                {loading ? 'Chargement...' : 
+                 statusFilter !== 'all' ? `Aucune application ${getStatusLabel(statusFilter).toLowerCase()} trouvée` :
+                 showDeleted ? 'Aucune application trouvée' : 
+                 'Aucune application active trouvée'}
               </CardContent>
             </Card>
-          );
-        }) : (
-          <Card className="bg-card/50 border-border/50">
-            <CardContent className="py-12 text-center text-muted-foreground">
-              {loading ? 'Chargement...' : 
-               statusFilter !== 'all' ? `Aucune application ${getStatusLabel(statusFilter).toLowerCase()} trouvée` :
-               showDeleted ? 'Aucune application trouvée' : 
-               'Aucune application active trouvée'}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+          )}
+        </div>
+      )}
+
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-sm text-muted-foreground">
+            Affichage de {((currentPage - 1) * itemsPerPage) + 1} à {Math.min(currentPage * itemsPerPage, sortedApps.length)} sur {sortedApps.length} applications
+          </p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="w-4 h-4 mr-1" />
+              Précédent
+            </Button>
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => 
+                  page === 1 || 
+                  page === totalPages || 
+                  Math.abs(page - currentPage) <= 1
+                )
+                .map((page, index, arr) => (
+                  <div key={page} className="flex items-center">
+                    {index > 0 && arr[index - 1] !== page - 1 && (
+                      <span className="px-2 text-muted-foreground">...</span>
+                    )}
+                    <Button
+                      variant={currentPage === page ? "default" : "outline"}
+                      size="sm"
+                      className="w-8 h-8 p-0"
+                      onClick={() => setCurrentPage(page)}
+                    >
+                      {page}
+                    </Button>
+                  </div>
+                ))
+              }
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+            >
+              Suivant
+              <ChevronRight className="w-4 h-4 ml-1" />
+            </Button>
+          </div>
+        </div>
+      )}
 
       <CreateApplicationDialog 
         open={showCreateApp} 
