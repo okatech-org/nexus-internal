@@ -13,12 +13,23 @@ import {
   Calendar,
   Plus,
   Eye,
-  History
+  History,
+  PenTool,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Case, WorkflowStep, Document } from '@/types/correspondance';
+import { 
+  Case, 
+  WorkflowStep, 
+  Document, 
+  SignatureRequest, 
+  SignerInfo,
+  AuditLogEntry 
+} from '@/types/correspondance';
 import { DocumentUpload, UploadedFile } from './DocumentUpload';
 import { DocumentPreview, DocumentWithVersions } from './DocumentPreview';
+import { SignatureWorkflow } from './SignatureWorkflow';
+import { AuditTrail } from './AuditTrail';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -53,12 +64,224 @@ const getDocumentVersions = (doc: Document): DocumentWithVersions => {
   return { ...doc, versions };
 };
 
+// Generate mock audit log
+const generateMockAuditLog = (caseItem: Case): AuditLogEntry[] => {
+  const entries: AuditLogEntry[] = [];
+  const baseTime = new Date(caseItem.created_at).getTime();
+  
+  entries.push({
+    id: `audit-${caseItem.id}-1`,
+    case_id: caseItem.id,
+    action: 'document_created',
+    actor_id: caseItem.created_by,
+    actor_name: 'Jean Dupont',
+    actor_role: 'Agent administratif',
+    details: `Dossier "${caseItem.title}" créé`,
+    ip_address: '192.168.1.100',
+    timestamp: new Date(baseTime).toISOString(),
+  });
+
+  caseItem.documents.forEach((doc, idx) => {
+    entries.push({
+      id: `audit-${caseItem.id}-doc-${idx}`,
+      case_id: caseItem.id,
+      action: 'document_created',
+      actor_id: doc.created_by,
+      actor_name: 'Marie Martin',
+      actor_role: 'Rédacteur',
+      details: `Document "${doc.name}" ajouté au dossier`,
+      ip_address: '192.168.1.101',
+      timestamp: new Date(baseTime + (idx + 1) * 3600000).toISOString(),
+    });
+  });
+
+  caseItem.workflow_history.forEach((event, idx) => {
+    entries.push({
+      id: `audit-${caseItem.id}-wf-${idx}`,
+      case_id: caseItem.id,
+      action: 'case_status_changed',
+      actor_id: event.actor_id,
+      actor_name: event.actor_name,
+      actor_role: 'Responsable',
+      details: `Étape "${event.step}" - ${event.action === 'complete' ? 'terminée' : event.action}`,
+      ip_address: '192.168.1.102',
+      timestamp: event.created_at,
+    });
+  });
+
+  return entries.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+};
+
+// Generate mock signature requests
+const generateMockSignatureRequests = (caseItem: Case): SignatureRequest[] => {
+  if (caseItem.documents.length === 0) return [];
+  
+  const requests: SignatureRequest[] = [];
+  
+  if (caseItem.current_step === 'approval' || caseItem.status === 'approved') {
+    requests.push({
+      id: `sig-req-${caseItem.id}-1`,
+      case_id: caseItem.id,
+      document_ids: caseItem.documents.slice(0, 1).map(d => d.id),
+      requested_by: 'service-account',
+      signers: [
+        {
+          id: 'signer-1',
+          signer_id: 'current-user',
+          signer_name: 'Utilisateur courant',
+          signer_email: 'user@gov.example',
+          signer_role: 'Approbateur',
+          order: 1,
+          status: caseItem.status === 'approved' ? 'signed' : 'pending',
+          signed_at: caseItem.status === 'approved' ? new Date().toISOString() : undefined,
+        },
+        {
+          id: 'signer-2',
+          signer_id: 'director-1',
+          signer_name: 'Philippe Directeur',
+          signer_email: 'director@gov.example',
+          signer_role: 'Directeur',
+          order: 2,
+          status: 'pending',
+        },
+      ],
+      status: caseItem.status === 'approved' ? 'completed' : 'active',
+      created_at: new Date(new Date(caseItem.created_at).getTime() + 86400000).toISOString(),
+      expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+    });
+  }
+  
+  return requests;
+};
+
 export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewProps) {
-  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'history'>('details');
+  const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'signatures' | 'history' | 'audit'>('details');
   const [showUpload, setShowUpload] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentWithVersions | null>(null);
+  const [signatureRequests, setSignatureRequests] = useState<SignatureRequest[]>(() => 
+    generateMockSignatureRequests(caseItem)
+  );
+  const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(() => 
+    generateMockAuditLog(caseItem)
+  );
   
   const currentStepIdx = stepIndex(caseItem.current_step);
+  
+  // Signature handlers
+  const handleRequestSignature = useCallback((
+    documentIds: string[], 
+    signers: Omit<SignerInfo, 'id' | 'status' | 'signed_at'>[]
+  ) => {
+    const newRequest: SignatureRequest = {
+      id: `sig-req-${Date.now()}`,
+      case_id: caseItem.id,
+      document_ids: documentIds,
+      requested_by: 'current-user',
+      signers: signers.map((s, idx) => ({
+        ...s,
+        id: `signer-${Date.now()}-${idx}`,
+        status: 'pending' as const,
+      })),
+      status: 'active',
+      created_at: new Date().toISOString(),
+      expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
+    };
+    
+    setSignatureRequests(prev => [newRequest, ...prev]);
+    
+    // Add audit entry
+    setAuditLog(prev => [{
+      id: `audit-${Date.now()}`,
+      case_id: caseItem.id,
+      action: 'signature_requested',
+      actor_id: 'current-user',
+      actor_name: 'Utilisateur courant',
+      actor_role: 'Agent',
+      details: `Demande de signature pour ${documentIds.length} document(s)`,
+      ip_address: '192.168.1.100',
+      timestamp: new Date().toISOString(),
+    }, ...prev]);
+  }, [caseItem.id]);
+  
+  const handleSign = useCallback((requestId: string) => {
+    setSignatureRequests(prev => prev.map(req => {
+      if (req.id !== requestId) return req;
+      
+      const updatedSigners = req.signers.map(s => 
+        s.signer_id === 'current-user' 
+          ? { ...s, status: 'signed' as const, signed_at: new Date().toISOString() }
+          : s
+      );
+      
+      const allSigned = updatedSigners.every(s => s.status === 'signed');
+      
+      return {
+        ...req,
+        signers: updatedSigners,
+        status: allSigned ? 'completed' : 'active',
+        completed_at: allSigned ? new Date().toISOString() : undefined,
+      };
+    }));
+    
+    // Add audit entry
+    setAuditLog(prev => [{
+      id: `audit-${Date.now()}`,
+      case_id: caseItem.id,
+      action: 'signature_signed',
+      actor_id: 'current-user',
+      actor_name: 'Utilisateur courant',
+      actor_role: 'Signataire',
+      details: 'Document signé électroniquement',
+      ip_address: '192.168.1.100',
+      metadata: { signature_hash: `SHA256:${Math.random().toString(36).slice(2, 18)}` },
+      timestamp: new Date().toISOString(),
+    }, ...prev]);
+  }, [caseItem.id]);
+  
+  const handleDecline = useCallback((requestId: string, reason: string) => {
+    setSignatureRequests(prev => prev.map(req => {
+      if (req.id !== requestId) return req;
+      
+      return {
+        ...req,
+        signers: req.signers.map(s => 
+          s.signer_id === 'current-user' 
+            ? { ...s, status: 'declined' as const }
+            : s
+        ),
+        status: 'cancelled',
+      };
+    }));
+    
+    // Add audit entry
+    setAuditLog(prev => [{
+      id: `audit-${Date.now()}`,
+      case_id: caseItem.id,
+      action: 'signature_declined',
+      actor_id: 'current-user',
+      actor_name: 'Utilisateur courant',
+      actor_role: 'Signataire',
+      details: `Signature refusée: ${reason}`,
+      ip_address: '192.168.1.100',
+      timestamp: new Date().toISOString(),
+    }, ...prev]);
+  }, [caseItem.id]);
+  
+  const handleExportAudit = useCallback(() => {
+    const content = auditLog.map(e => 
+      `${e.timestamp} | ${e.actor_name} | ${e.action} | ${e.details}`
+    ).join('\n');
+    
+    const blob = new Blob([content], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `audit-${caseItem.reference}-${format(new Date(), 'yyyy-MM-dd')}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast.success('Piste d\'audit exportée');
+  }, [auditLog, caseItem.reference]);
   
   const handleFilesUploaded = useCallback((files: UploadedFile[]) => {
     const newDocuments: Document[] = files.map((file, index) => ({
@@ -150,17 +373,19 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
       </div>
       
       {/* Tabs */}
-      <div className="flex gap-1 p-2 border-b border-border">
+      <div className="flex gap-1 p-2 border-b border-border overflow-x-auto">
         {[
           { id: 'details', label: 'Détails', icon: FileText },
-          { id: 'documents', label: `Documents (${caseItem.documents.length})`, icon: File },
+          { id: 'documents', label: `Docs (${caseItem.documents.length})`, icon: File },
+          { id: 'signatures', label: 'Signatures', icon: PenTool },
           { id: 'history', label: 'Historique', icon: Clock },
+          { id: 'audit', label: 'Audit', icon: Shield },
         ].map(tab => (
           <button
             key={tab.id}
             onClick={() => setActiveTab(tab.id as typeof activeTab)}
             className={cn(
-              "flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-colors",
+              "flex items-center justify-center gap-1.5 py-2 px-3 rounded-lg text-sm font-medium transition-colors whitespace-nowrap",
               activeTab === tab.id
                 ? "bg-primary/10 text-primary"
                 : "text-muted-foreground hover:text-foreground"
@@ -400,6 +625,27 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
               </motion.div>
             ))}
           </div>
+        )}
+
+        {activeTab === 'signatures' && (
+          <SignatureWorkflow
+            caseId={caseItem.id}
+            documents={caseItem.documents}
+            signatureRequests={signatureRequests}
+            auditLog={auditLog.filter(e => e.action.startsWith('signature_'))}
+            currentUserId="current-user"
+            currentUserName="Utilisateur courant"
+            onRequestSignature={handleRequestSignature}
+            onSign={handleSign}
+            onDecline={handleDecline}
+          />
+        )}
+
+        {activeTab === 'audit' && (
+          <AuditTrail
+            entries={auditLog}
+            onExport={handleExportAudit}
+          />
         )}
       </div>
       
