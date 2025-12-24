@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, MessageCircle, Mail, Archive, ArrowLeft, Plus, Search } from 'lucide-react';
+import { X, MessageCircle, Inbox, Archive, ArrowLeft, Plus, Search, Bot, User, Network } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
 import { ConversationList } from './ConversationList';
@@ -14,6 +14,8 @@ type InboxView = 'inbox' | 'archived';
 export function CommsCenterDrawer() {
   const { 
     capabilities,
+    appContext,
+    currentNetwork,
     isCommsCenterOpen, 
     closeCommsCenter, 
     activeTab, 
@@ -25,11 +27,17 @@ export function CommsCenterDrawer() {
   const [inboxView, setInboxView] = useState<InboxView>('inbox');
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Only show enabled modules
   const icomEnabled = capabilities?.modules.icom.enabled;
   const iboiteEnabled = capabilities?.modules.iboite.enabled;
   
   const hasDetailView = (activeTab === 'icom' && selectedConversation) || 
                         (activeTab === 'iboite' && selectedThread);
+  
+  // Auto-select first available tab if current is disabled
+  const effectiveTab = activeTab === 'icom' && !icomEnabled && iboiteEnabled ? 'iboite' 
+    : activeTab === 'iboite' && !iboiteEnabled && icomEnabled ? 'icom' 
+    : activeTab;
   
   return (
     <AnimatePresence>
@@ -54,15 +62,13 @@ export function CommsCenterDrawer() {
           >
             {/* Header */}
             <div className="p-4 border-b border-border">
-              <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-3">
                   {hasDetailView && (
                     <Button
                       variant="ghost"
                       size="icon-sm"
-                      onClick={() => {
-                        // Back button - handled by parent
-                      }}
+                      onClick={() => {}}
                     >
                       <ArrowLeft className="w-4 h-4" />
                     </Button>
@@ -80,15 +86,42 @@ export function CommsCenterDrawer() {
                 </Button>
               </div>
               
-              {/* Tabs */}
-              {!hasDetailView && (
+              {/* Mode & Network Badges */}
+              <div className="flex items-center gap-2 mb-3">
+                <span className={cn(
+                  "text-xs px-2 py-1 rounded-full flex items-center gap-1",
+                  appContext.mode === 'service' 
+                    ? 'bg-icom/20 text-icom' 
+                    : 'bg-primary/20 text-primary'
+                )}>
+                  {appContext.mode === 'service' ? (
+                    <><Bot className="w-3 h-3" /> Service</>
+                  ) : (
+                    <><User className="w-3 h-3" /> Delegated</>
+                  )}
+                </span>
+                {currentNetwork && (
+                  <span className={cn(
+                    "text-xs px-2 py-1 rounded-full flex items-center gap-1",
+                    currentNetwork.network_type === 'government'
+                      ? 'bg-primary/10 text-primary'
+                      : 'bg-iboite/10 text-iboite'
+                  )}>
+                    <Network className="w-3 h-3" />
+                    {currentNetwork.name}
+                  </span>
+                )}
+              </div>
+              
+              {/* Tabs - only show enabled modules */}
+              {!hasDetailView && (icomEnabled || iboiteEnabled) && (
                 <div className="flex gap-2">
                   {icomEnabled && (
                     <button
                       onClick={() => setActiveTab('icom')}
                       className={cn(
                         "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                        activeTab === 'icom'
+                        effectiveTab === 'icom'
                           ? "bg-icom/20 text-icom border border-icom/30"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                       )}
@@ -102,12 +135,12 @@ export function CommsCenterDrawer() {
                       onClick={() => setActiveTab('iboite')}
                       className={cn(
                         "flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium transition-all duration-200",
-                        activeTab === 'iboite'
+                        effectiveTab === 'iboite'
                           ? "bg-iboite/20 text-iboite border border-iboite/30"
                           : "text-muted-foreground hover:text-foreground hover:bg-secondary"
                       )}
                     >
-                      <Mail className="w-4 h-4" />
+                      <Inbox className="w-4 h-4" />
                       iBoîte
                     </button>
                   )}
@@ -123,12 +156,12 @@ export function CommsCenterDrawer() {
                       type="text"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder={activeTab === 'icom' ? 'Rechercher une conversation...' : 'Rechercher un message...'}
+                      placeholder={effectiveTab === 'icom' ? 'Rechercher une conversation...' : 'Rechercher un thread...'}
                       className="w-full bg-secondary/50 rounded-lg pl-10 pr-4 py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
                     />
                   </div>
                   
-                  {activeTab === 'iboite' && (
+                  {effectiveTab === 'iboite' && (
                     <div className="flex gap-1">
                       <button
                         onClick={() => setInboxView('inbox')}
@@ -139,7 +172,7 @@ export function CommsCenterDrawer() {
                             : "text-muted-foreground hover:text-foreground"
                         )}
                       >
-                        Boîte de réception
+                        Inbox interne
                       </button>
                       <button
                         onClick={() => setInboxView('archived')}
@@ -161,7 +194,7 @@ export function CommsCenterDrawer() {
             
             {/* Content */}
             <div className="flex-1 overflow-hidden">
-              {activeTab === 'icom' && (
+              {effectiveTab === 'icom' && icomEnabled && (
                 selectedConversation ? (
                   <ChatView />
                 ) : (
@@ -169,20 +202,28 @@ export function CommsCenterDrawer() {
                 )
               )}
               
-              {activeTab === 'iboite' && (
+              {effectiveTab === 'iboite' && iboiteEnabled && (
                 selectedThread ? (
                   <ThreadView />
                 ) : (
                   <ThreadList showArchived={inboxView === 'archived'} />
                 )
               )}
+              
+              {!icomEnabled && !iboiteEnabled && (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Aucun module de communication activé pour cette application.
+                  </p>
+                </div>
+              )}
             </div>
             
             {/* FAB for new conversation/thread */}
-            {!hasDetailView && (
+            {!hasDetailView && (icomEnabled || iboiteEnabled) && (
               <div className="absolute bottom-6 right-6">
                 <Button
-                  variant={activeTab === 'icom' ? 'icom' : 'iboite'}
+                  variant={effectiveTab === 'icom' ? 'icom' : 'iboite'}
                   size="icon-lg"
                   className="rounded-xl shadow-lg"
                 >

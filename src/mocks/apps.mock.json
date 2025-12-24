@@ -1,0 +1,93 @@
+[
+  {
+    "app_id": "sandbox-app",
+    "name": "Sandbox Demo",
+    "tenant_id": "demo-tenant",
+    "network_id": "sandbox-net",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    }
+  },
+  {
+    "app_id": "app-mairie-001",
+    "name": "Mairie de Kinshasa",
+    "tenant_id": "mairie-kin",
+    "network_id": "gov-net-001",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    }
+  },
+  {
+    "app_id": "app-parlement-001",
+    "name": "Parlement National",
+    "tenant_id": "parlement-rdc",
+    "network_id": "gov-net-001",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": false,
+      "icorrespondance": true
+    }
+  },
+  {
+    "app_id": "app-gov-demo",
+    "name": "Gov Demo App",
+    "tenant_id": "gov-demo",
+    "network_id": "gov-net-001",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    }
+  },
+  {
+    "app_id": "app-idn-001",
+    "name": "idn.ga Portal",
+    "tenant_id": "idn-tenant",
+    "network_id": "commercial-net-001",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": false
+    }
+  },
+  {
+    "app_id": "app-business-demo",
+    "name": "Business Demo",
+    "tenant_id": "business-demo",
+    "network_id": "commercial-net-001",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": false,
+      "iasted": true,
+      "icorrespondance": false
+    }
+  },
+  {
+    "app_id": "app-startup-001",
+    "name": "Startup Connect",
+    "tenant_id": "startup-tenant",
+    "network_id": "commercial-net-001",
+    "status": "active",
+    "enabled_modules": {
+      "icom": true,
+      "iboite": true,
+      "iasted": false,
+      "icorrespondance": false
+    }
+  }
+]
