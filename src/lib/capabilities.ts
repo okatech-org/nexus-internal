@@ -6,8 +6,11 @@ import {
   ModuleConfig,
   ModuleName,
   DisabledReason,
-  Realm 
+  Realm,
+  IcomFeatures,
+  IcomFeatureName
 } from '@/types/comms';
+import { hasIcomFeatureScope } from '@/lib/auth/scopes';
 import appsData from '@/mocks/apps.mock.json';
 import networksData from '@/mocks/networks.mock.json';
 
@@ -24,6 +27,7 @@ const STORAGE_KEYS = {
   MODE: 'comms.mode',
   DELEGATED_ACTOR_ID: 'comms.delegated_actor_id',
   DELEGATED_REALM: 'comms.delegated_realm',
+  USER_SCOPES: 'comms.user_scopes',
 } as const;
 
 // Get all available apps
@@ -101,12 +105,71 @@ export function saveAppContext(context: AppContext): void {
   }
 }
 
+// Get user scopes from localStorage
+export function getUserScopes(): string[] {
+  const scopesStr = localStorage.getItem(STORAGE_KEYS.USER_SCOPES);
+  if (!scopesStr) return [];
+  try {
+    return JSON.parse(scopesStr);
+  } catch {
+    return [];
+  }
+}
+
+// Save user scopes to localStorage
+export function saveUserScopes(scopes: string[]): void {
+  localStorage.setItem(STORAGE_KEYS.USER_SCOPES, JSON.stringify(scopes));
+}
+
+// Calculate iCom feature status
+function calculateIcomFeatures(
+  app: App,
+  userScopes: string[]
+): IcomFeatures {
+  const appFeatures = app.icom_features || { chat: true, call: true, meeting: true, contact: true };
+  
+  const features: IcomFeatures = {
+    chat: { enabled: false },
+    call: { enabled: false },
+    meeting: { enabled: false },
+    contact: { enabled: false },
+  };
+
+  const featureNames: IcomFeatureName[] = ['chat', 'call', 'meeting', 'contact'];
+
+  for (const feature of featureNames) {
+    // Check if app has this feature enabled
+    if (!appFeatures[feature]) {
+      features[feature] = {
+        enabled: false,
+        disabled_reason: 'MODULE_DISABLED',
+      };
+      continue;
+    }
+
+    // Check if user has required scope for this feature
+    if (userScopes.length > 0 && !hasIcomFeatureScope(userScopes, feature)) {
+      features[feature] = {
+        enabled: false,
+        disabled_reason: 'MISSING_SCOPE',
+      };
+      continue;
+    }
+
+    // Feature is enabled
+    features[feature] = { enabled: true };
+  }
+
+  return features;
+}
+
 // Calculate effective module status
 function calculateModuleStatus(
   moduleName: ModuleName,
   app: App,
   network: Network,
-  delegatedRealm?: Realm
+  delegatedRealm?: Realm,
+  userScopes: string[] = []
 ): ModuleConfig {
   const appEnabled = app.enabled_modules[moduleName];
   const networkPolicy = network.modules_policy[moduleName];
@@ -147,19 +210,32 @@ function calculateModuleStatus(
     config.realm_required = 'government';
   }
 
+  // Special handling for iCom - calculate features
+  if (moduleName === 'icom') {
+    const features = calculateIcomFeatures(app, userScopes);
+    
+    // icom.enabled = true if at least 1 feature is enabled
+    const hasAnyFeatureEnabled = Object.values(features).some(f => f.enabled);
+    
+    config.enabled = hasAnyFeatureEnabled;
+    config.features = features;
+    config.realtime = { sse_url: '/v1/realtime' };
+    
+    if (!hasAnyFeatureEnabled) {
+      config.disabled_reason = 'MODULE_DISABLED';
+    }
+    
+    return config;
+  }
+
   // Module is enabled
   config.enabled = true;
   
-  // Add realtime config for iCom
-  if (moduleName === 'icom') {
-    config.realtime = { sse_url: '/v1/realtime' };
-  }
-
   return config;
 }
 
 // Bootstrap capabilities for an app context
-export function bootstrapCapabilities(appContext: AppContext): Capabilities | null {
+export function bootstrapCapabilities(appContext: AppContext, userScopes: string[] = []): Capabilities | null {
   const app = getAppById(appContext.app_id);
   if (!app) return null;
 
@@ -167,6 +243,9 @@ export function bootstrapCapabilities(appContext: AppContext): Capabilities | nu
   if (!network) return null;
 
   const delegatedRealm = appContext.mode === 'delegated' ? appContext.delegated_realm : undefined;
+  
+  // Get scopes from localStorage if not provided
+  const effectiveScopes = userScopes.length > 0 ? userScopes : getUserScopes();
 
   return {
     platform: 'okatech-comms',
@@ -176,10 +255,10 @@ export function bootstrapCapabilities(appContext: AppContext): Capabilities | nu
     network_id: network.network_id,
     network_type: network.network_type,
     modules: {
-      icom: calculateModuleStatus('icom', app, network, delegatedRealm),
-      iboite: calculateModuleStatus('iboite', app, network, delegatedRealm),
-      iasted: calculateModuleStatus('iasted', app, network, delegatedRealm),
-      icorrespondance: calculateModuleStatus('icorrespondance', app, network, delegatedRealm),
+      icom: calculateModuleStatus('icom', app, network, delegatedRealm, effectiveScopes),
+      iboite: calculateModuleStatus('iboite', app, network, delegatedRealm, effectiveScopes),
+      iasted: calculateModuleStatus('iasted', app, network, delegatedRealm, effectiveScopes),
+      icorrespondance: calculateModuleStatus('icorrespondance', app, network, delegatedRealm, effectiveScopes),
     },
   };
 }
@@ -199,4 +278,19 @@ export function getApiHeaders(appContext: AppContext): Record<string, string> {
   }
 
   return headers;
+}
+
+// Get enabled iCom features for display
+export function getEnabledIcomFeatures(capabilities: Capabilities | null): IcomFeatureName[] {
+  if (!capabilities?.modules.icom.features) return [];
+  
+  const features = capabilities.modules.icom.features;
+  const enabled: IcomFeatureName[] = [];
+  
+  if (features.contact.enabled) enabled.push('contact');
+  if (features.chat.enabled) enabled.push('chat');
+  if (features.call.enabled) enabled.push('call');
+  if (features.meeting.enabled) enabled.push('meeting');
+  
+  return enabled;
 }

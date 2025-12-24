@@ -13,7 +13,25 @@ export type DisabledReason =
   | 'REALM_NOT_GOV' 
   | 'MODULE_DISABLED' 
   | 'NOT_ENTITLED'
-  | 'NETWORK_POLICY';
+  | 'NETWORK_POLICY'
+  | 'MISSING_SCOPE';
+
+// iCom feature names
+export type IcomFeatureName = 'chat' | 'call' | 'meeting' | 'contact';
+
+// iCom feature config
+export interface IcomFeatureConfig {
+  enabled: boolean;
+  disabled_reason?: DisabledReason;
+}
+
+// iCom features structure
+export interface IcomFeatures {
+  chat: IcomFeatureConfig;
+  call: IcomFeatureConfig;
+  meeting: IcomFeatureConfig;
+  contact: IcomFeatureConfig;
+}
 
 // Network - A collection of apps with shared policies
 export interface Network {
@@ -42,6 +60,13 @@ export interface App {
     iasted: boolean;
     icorrespondance: boolean;
   };
+  // Granular iCom features
+  icom_features?: {
+    chat: boolean;
+    call: boolean;
+    meeting: boolean;
+    contact: boolean;
+  };
 }
 
 // Module configuration with effective status
@@ -50,6 +75,8 @@ export interface ModuleConfig {
   disabled_reason?: DisabledReason;
   realtime?: { sse_url: string };
   realm_required?: string;
+  // iCom specific features
+  features?: IcomFeatures;
 }
 
 export interface Capabilities {

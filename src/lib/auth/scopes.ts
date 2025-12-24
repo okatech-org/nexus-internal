@@ -10,6 +10,21 @@ export const MODULE_SCOPES = {
     read: 'icom:read',
     write: 'icom:write',
     all: 'icom:*',
+    // Feature-level scopes for iCom
+    chat: {
+      read: 'icom:chat:read',
+      write: 'icom:chat:write',
+      all: 'icom:chat:*',
+    },
+    call: {
+      use: 'icom:call:use',
+    },
+    meeting: {
+      use: 'icom:meeting:use',
+    },
+    contact: {
+      read: 'icom:contact:read',
+    },
   },
   iboite: {
     read: 'iboite:read',
@@ -28,6 +43,22 @@ export const MODULE_SCOPES = {
     all: 'icorrespondance:*',
   },
 } as const;
+
+// iCom feature scope requirements
+export const ICOM_FEATURE_SCOPES = {
+  chat: ['icom:chat:read', 'icom:chat:write', 'icom:chat:*', 'icom:*'],
+  call: ['icom:call:use', 'icom:*'],
+  meeting: ['icom:meeting:use', 'icom:*'],
+  contact: ['icom:contact:read', 'icom:*'],
+} as const;
+
+/**
+ * Check if user has scope for a specific iCom feature
+ */
+export function hasIcomFeatureScope(userScopes: string[], feature: 'chat' | 'call' | 'meeting' | 'contact'): boolean {
+  const requiredScopes = ICOM_FEATURE_SCOPES[feature];
+  return requiredScopes.some(scope => hasScope(userScopes, scope));
+}
 
 // Admin scopes
 export const ADMIN_SCOPES = {
@@ -205,8 +236,10 @@ export const DEFAULT_SCOPES = {
     'iasted:*',
   ],
   service_gov: [
-    'icom:read',
-    'icom:write',
+    'icom:chat:*',
+    'icom:call:use',
+    'icom:meeting:use',
+    'icom:contact:read',
     'iboite:read',
     'iboite:write',
     'iasted:chat',
@@ -216,16 +249,33 @@ export const DEFAULT_SCOPES = {
     'icorrespondance:approve',
   ],
   service_commercial: [
-    'icom:read',
-    'icom:write',
+    'icom:chat:*',
+    'icom:call:use',
+    'icom:meeting:use',
+    'icom:contact:read',
     'iboite:read',
     'iboite:write',
     'iasted:chat',
     'iasted:summarize',
   ],
+  // iCom à la carte examples
+  service_call_contact_only: [
+    'icom:call:use',
+    'icom:contact:read',
+    'iboite:read',
+    'iboite:write',
+    'iasted:chat',
+  ],
+  delegated_chat_contact: [
+    'icom:chat:*',
+    'icom:contact:read',
+    'iboite:read',
+    'iboite:write',
+    'iasted:chat',
+  ],
   delegated_citizen: [
-    'icom:read',
-    'icom:write',
+    'icom:chat:*',
+    'icom:contact:read',
     'iboite:read',
     'iboite:write',
     'iasted:chat',
