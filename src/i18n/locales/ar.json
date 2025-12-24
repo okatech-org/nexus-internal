@@ -18,12 +18,92 @@
     "yes": "نعم",
     "no": "لا",
     "enabled": "مفعّل",
-    "disabled": "معطّل"
+    "disabled": "معطّل",
+    "active": "نشط",
+    "connected": "متصل"
   },
   "nav": {
     "home": "الرئيسية",
     "debug": "تصحيح",
-    "simulator": "المحاكي"
+    "simulator": "المحاكي",
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "backToHome": "العودة للرئيسية",
+    "switchAccount": "تبديل الحساب",
+    "jwtInspector": "فاحص JWT",
+    "demoMode": "وضع العرض"
+  },
+  "userMenu": {
+    "session": "الجلسة",
+    "appId": "معرف التطبيق",
+    "tenant": "المستأجر",
+    "network": "الشبكة",
+    "realm": "المجال",
+    "scopes": "الصلاحيات",
+    "expiresIn": "ينتهي في",
+    "more": "المزيد"
+  },
+  "dashboard": {
+    "platformAdmin": {
+      "title": "مدير المنصة",
+      "subtitle": "وحدة تحكم Okatech",
+      "appsRegistry": "سجل التطبيقات",
+      "networks": "الشبكات",
+      "modules": "الوحدات",
+      "audit": "التدقيق",
+      "registeredApps": "التطبيقات المسجلة",
+      "newApp": "تطبيق جديد",
+      "newNetwork": "شبكة جديدة",
+      "modulesConfig": "إعدادات الوحدات",
+      "availableForAll": "متاح لجميع الشبكات",
+      "govOnly": "متاح فقط للشبكات الحكومية",
+      "restrictedToGov": "مقيد بـ realm=government",
+      "auditLog": "سجل التدقيق",
+      "memberApps": "التطبيقات الأعضاء"
+    },
+    "tenantAdmin": {
+      "title": "مدير المستأجر",
+      "myApps": "تطبيقاتي",
+      "modules": "الوحدات",
+      "activity": "النشاط",
+      "tenantApps": "تطبيقات المستأجر",
+      "noApps": "لا توجد تطبيقات لهذا المستأجر",
+      "modulesConfig": "إعدادات الوحدات",
+      "adminMail": "البريد الإداري",
+      "standardComm": "الاتصال القياسي",
+      "recentActivity": "النشاط الأخير"
+    },
+    "service": {
+      "title": "لوحة الخدمة",
+      "activeSession": "الجلسة النشطة",
+      "openCommsCenter": "فتح مركز الاتصالات",
+      "availableModules": "الوحدات المتاحة",
+      "realtimeChat": "محادثة فورية",
+      "internalInbox": "صندوق الوارد الداخلي",
+      "aiAssistant": "مساعد الذكاء الاصطناعي",
+      "adminMail": "البريد الإداري",
+      "notAvailable": "غير متاح"
+    },
+    "delegated": {
+      "title": "مساحتي",
+      "welcome": "مرحباً",
+      "accessComms": "الوصول إلى اتصالاتك وخدماتك من هذا المكان.",
+      "quickActions": "إجراءات سريعة",
+      "newConversation": "محادثة جديدة",
+      "viewMessages": "عرض الرسائل",
+      "askHelp": "طلب المساعدة",
+      "yourServices": "خدماتك",
+      "messages": "الرسائل",
+      "liveConversations": "محادثات مباشرة",
+      "inbox": "صندوق الوارد",
+      "internalMail": "البريد الداخلي",
+      "assistant": "المساعد",
+      "smartHelp": "مساعدة ذكية",
+      "officialMail": "البريد الرسمي",
+      "adminDocs": "المستندات الإدارية",
+      "new": "جديد",
+      "servicesNotAvailable": "بعض الخدمات غير متاحة لملفك الشخصي."
+    }
   },
   "quickDemo": {
     "title": "عرض سريع",
@@ -120,6 +200,7 @@
   },
   "modes": {
     "platform_admin": "مدير المنصة",
+    "tenant_admin": "مدير المستأجر",
     "service": "خدمة",
     "delegated": "مفوض"
   },
@@ -128,5 +209,13 @@
     "business": "تجاري",
     "citizen": "مواطن",
     "platform": "منصة"
+  },
+  "audit": {
+    "appRegistered": "تم تسجيل التطبيق",
+    "networkCreated": "تم إنشاء الشبكة",
+    "moduleEnabled": "تم تفعيل الوحدة",
+    "sessionStarted": "بدأت الجلسة",
+    "messageSent": "تم إرسال الرسالة",
+    "threadCreated": "تم إنشاء الموضوع"
   }
 }

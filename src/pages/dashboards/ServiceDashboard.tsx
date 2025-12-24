@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Server, MessageCircle, Inbox, Brain, FileText, Radio
@@ -11,6 +12,7 @@ import { UserMenu } from '@/components/layout/UserMenu';
 import { cn } from '@/lib/utils';
 
 export default function ServiceDashboard() {
+  const { t } = useTranslation();
   const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
   
@@ -19,7 +21,7 @@ export default function ServiceDashboard() {
       id: 'icom', 
       name: 'iCom', 
       icon: MessageCircle, 
-      description: 'Chat en temps réel',
+      description: t('dashboard.service.realtimeChat'),
       color: 'text-icom bg-icom/20',
       enabled: hasScope('icom:read'),
     },
@@ -27,7 +29,7 @@ export default function ServiceDashboard() {
       id: 'iboite', 
       name: 'iBoîte', 
       icon: Inbox, 
-      description: 'Inbox interne',
+      description: t('dashboard.service.internalInbox'),
       color: 'text-iboite bg-iboite/20',
       enabled: hasScope('iboite:read'),
     },
@@ -35,7 +37,7 @@ export default function ServiceDashboard() {
       id: 'iasted', 
       name: 'iAsted', 
       icon: Brain, 
-      description: 'Assistant IA',
+      description: t('dashboard.service.aiAssistant'),
       color: 'text-neural bg-neural/20',
       enabled: hasScope('iasted:chat'),
     },
@@ -43,7 +45,7 @@ export default function ServiceDashboard() {
       id: 'icorrespondance', 
       name: 'iCorrespondance', 
       icon: FileText, 
-      description: 'Courrier administratif',
+      description: t('dashboard.service.adminMail'),
       color: 'text-primary bg-primary/20',
       enabled: hasScope('icorrespondance:read'),
     },
@@ -66,7 +68,7 @@ export default function ServiceDashboard() {
                   <Server className="w-5 h-5 text-emerald-400" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">Service Dashboard</h1>
+                  <h1 className="text-xl font-bold text-foreground">{t('dashboard.service.title')}</h1>
                   <p className="text-xs text-muted-foreground font-mono">{payload?.app_id}</p>
                 </div>
               </div>
@@ -85,29 +87,29 @@ export default function ServiceDashboard() {
           className="glass rounded-2xl p-6 mb-8"
         >
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-foreground">Session Active</h2>
+            <h2 className="text-lg font-semibold text-foreground">{t('dashboard.service.activeSession')}</h2>
             <Badge variant="default" className="bg-success/20 text-success border-success/30">
               <Radio className="w-3 h-3 mr-1 animate-pulse" />
-              Connected
+              {t('common.connected')}
             </Badge>
           </div>
           
           <div className="grid gap-4 md:grid-cols-4 text-sm">
             <div>
-              <span className="text-muted-foreground block mb-1">App ID</span>
+              <span className="text-muted-foreground block mb-1">{t('userMenu.appId')}</span>
               <span className="font-mono text-foreground">{payload?.app_id}</span>
             </div>
             <div>
-              <span className="text-muted-foreground block mb-1">Tenant</span>
+              <span className="text-muted-foreground block mb-1">{t('userMenu.tenant')}</span>
               <span className="font-mono text-foreground">{payload?.tenant_id}</span>
             </div>
             <div>
-              <span className="text-muted-foreground block mb-1">Network</span>
-              <Badge variant="outline">{payload?.network_type}</Badge>
+              <span className="text-muted-foreground block mb-1">{t('userMenu.network')}</span>
+              <Badge variant="outline">{t(`networkTypes.${payload?.network_type}`)}</Badge>
             </div>
             <div>
-              <span className="text-muted-foreground block mb-1">Realm</span>
-              <Badge variant="outline">{payload?.realm}</Badge>
+              <span className="text-muted-foreground block mb-1">{t('userMenu.realm')}</span>
+              <Badge variant="outline">{t(`realms.${payload?.realm}`)}</Badge>
             </div>
           </div>
         </motion.div>
@@ -126,12 +128,12 @@ export default function ServiceDashboard() {
             className="w-full md:w-auto"
           >
             <MessageCircle className="w-5 h-5 mr-2" />
-            Ouvrir le Centre de Communication
+            {t('dashboard.service.openCommsCenter')}
           </Button>
         </motion.div>
         
         {/* Modules */}
-        <h2 className="text-lg font-semibold mb-4">Modules Disponibles</h2>
+        <h2 className="text-lg font-semibold mb-4">{t('dashboard.service.availableModules')}</h2>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {modules.map((module, index) => (
             <motion.div
@@ -159,7 +161,7 @@ export default function ServiceDashboard() {
                   module.enabled ? "border-success/30 text-success" : "border-muted"
                 )}
               >
-                {module.enabled ? 'Activé' : 'Non disponible'}
+                {module.enabled ? t('common.enabled') : t('dashboard.service.notAvailable')}
               </Badge>
             </motion.div>
           ))}

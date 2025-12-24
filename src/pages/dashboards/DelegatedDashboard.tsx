@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell
@@ -11,42 +12,43 @@ import { UserMenu } from '@/components/layout/UserMenu';
 import { cn } from '@/lib/utils';
 
 export default function DelegatedDashboard() {
+  const { t } = useTranslation();
   const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
   
   const modules = [
     { 
       id: 'icom', 
-      name: 'Messages', 
+      name: t('dashboard.delegated.messages'), 
       icon: MessageCircle, 
-      description: 'Conversations en direct',
+      description: t('dashboard.delegated.liveConversations'),
       color: 'text-icom bg-icom/20',
       enabled: hasScope('icom:read'),
       unread: 3,
     },
     { 
       id: 'iboite', 
-      name: 'Boîte de réception', 
+      name: t('dashboard.delegated.inbox'), 
       icon: Inbox, 
-      description: 'Courrier interne',
+      description: t('dashboard.delegated.internalMail'),
       color: 'text-iboite bg-iboite/20',
       enabled: hasScope('iboite:read'),
       unread: 5,
     },
     { 
       id: 'iasted', 
-      name: 'Assistant', 
+      name: t('dashboard.delegated.assistant'), 
       icon: Brain, 
-      description: 'Aide intelligente',
+      description: t('dashboard.delegated.smartHelp'),
       color: 'text-neural bg-neural/20',
       enabled: hasScope('iasted:chat'),
       unread: 0,
     },
     { 
       id: 'icorrespondance', 
-      name: 'Courrier Officiel', 
+      name: t('dashboard.delegated.officialMail'), 
       icon: FileText, 
-      description: 'Documents administratifs',
+      description: t('dashboard.delegated.adminDocs'),
       color: 'text-primary bg-primary/20',
       enabled: hasScope('icorrespondance:read'),
       unread: 1,
@@ -70,7 +72,7 @@ export default function DelegatedDashboard() {
                   <User className="w-5 h-5 text-purple-400" />
                 </div>
                 <div>
-                  <h1 className="text-xl font-bold text-foreground">Mon Espace</h1>
+                  <h1 className="text-xl font-bold text-foreground">{t('dashboard.delegated.title')}</h1>
                   <p className="text-xs text-muted-foreground">{payload?.actor_id || payload?.sub}</p>
                 </div>
               </div>
@@ -96,10 +98,10 @@ export default function DelegatedDashboard() {
           className="mb-8"
         >
           <h2 className="text-2xl font-bold text-foreground mb-2">
-            Bienvenue, {payload?.actor_id || 'Utilisateur'}
+            {t('dashboard.delegated.welcome')}, {payload?.actor_id || t('modes.delegated')}
           </h2>
           <p className="text-muted-foreground">
-            Accédez à vos communications et services depuis cet espace.
+            {t('dashboard.delegated.accessComms')}
           </p>
         </motion.div>
         
@@ -110,25 +112,25 @@ export default function DelegatedDashboard() {
           transition={{ delay: 0.1 }}
           className="glass rounded-2xl p-6 mb-8"
         >
-          <h3 className="font-medium text-foreground mb-4">Actions rapides</h3>
+          <h3 className="font-medium text-foreground mb-4">{t('dashboard.delegated.quickActions')}</h3>
           <div className="flex flex-wrap gap-3">
             <Button variant="neural" onClick={openCommsCenter}>
               <MessageCircle className="w-4 h-4 mr-2" />
-              Nouvelle conversation
+              {t('dashboard.delegated.newConversation')}
             </Button>
             <Button variant="outline">
               <Inbox className="w-4 h-4 mr-2" />
-              Voir mes messages
+              {t('dashboard.delegated.viewMessages')}
             </Button>
             <Button variant="outline">
               <Brain className="w-4 h-4 mr-2" />
-              Demander de l'aide
+              {t('dashboard.delegated.askHelp')}
             </Button>
           </div>
         </motion.div>
         
         {/* Modules Grid */}
-        <h3 className="font-medium text-foreground mb-4">Vos services</h3>
+        <h3 className="font-medium text-foreground mb-4">{t('dashboard.delegated.yourServices')}</h3>
         <div className="grid gap-4 md:grid-cols-2">
           {modules.filter(m => m.enabled).map((module, index) => (
             <motion.button
@@ -149,7 +151,7 @@ export default function DelegatedDashboard() {
                 
                 {module.unread > 0 && (
                   <Badge variant="destructive" className="text-xs">
-                    {module.unread} nouveau{module.unread > 1 ? 'x' : ''}
+                    {module.unread} {t('dashboard.delegated.new')}{module.unread > 1 ? 's' : ''}
                   </Badge>
                 )}
               </div>
@@ -168,7 +170,7 @@ export default function DelegatedDashboard() {
             transition={{ delay: 0.3 }}
             className="mt-6 p-4 rounded-xl bg-muted/50 text-sm text-muted-foreground"
           >
-            Certains services ne sont pas disponibles pour votre profil.
+            {t('dashboard.delegated.servicesNotAvailable')}
           </motion.div>
         )}
       </main>

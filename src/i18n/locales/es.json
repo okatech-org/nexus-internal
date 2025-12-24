@@ -18,12 +18,92 @@
     "yes": "Sí",
     "no": "No",
     "enabled": "Habilitado",
-    "disabled": "Deshabilitado"
+    "disabled": "Deshabilitado",
+    "active": "Activo",
+    "connected": "Conectado"
   },
   "nav": {
     "home": "Inicio",
     "debug": "Depurar",
-    "simulator": "Simulador"
+    "simulator": "Simulador",
+    "login": "Iniciar sesión",
+    "logout": "Cerrar sesión",
+    "backToHome": "Volver al inicio",
+    "switchAccount": "Cambiar cuenta",
+    "jwtInspector": "Inspector JWT",
+    "demoMode": "Modo Demo"
+  },
+  "userMenu": {
+    "session": "Sesión",
+    "appId": "App ID",
+    "tenant": "Tenant",
+    "network": "Red",
+    "realm": "Dominio",
+    "scopes": "Alcances",
+    "expiresIn": "Expira en",
+    "more": "más"
+  },
+  "dashboard": {
+    "platformAdmin": {
+      "title": "Admin Plataforma",
+      "subtitle": "Consola Okatech",
+      "appsRegistry": "Registro de Apps",
+      "networks": "Redes",
+      "modules": "Módulos",
+      "audit": "Auditoría",
+      "registeredApps": "Aplicaciones registradas",
+      "newApp": "Nueva App",
+      "newNetwork": "Nueva Red",
+      "modulesConfig": "Configuración de Módulos",
+      "availableForAll": "Disponible para todas las redes",
+      "govOnly": "Disponible solo para redes gubernamentales",
+      "restrictedToGov": "Restringido a realm=government",
+      "auditLog": "Registro de auditoría",
+      "memberApps": "Apps miembros"
+    },
+    "tenantAdmin": {
+      "title": "Admin Tenant",
+      "myApps": "Mis Aplicaciones",
+      "modules": "Módulos",
+      "activity": "Actividad",
+      "tenantApps": "Aplicaciones del tenant",
+      "noApps": "No hay aplicaciones para este tenant",
+      "modulesConfig": "Configuración de módulos",
+      "adminMail": "Correo administrativo",
+      "standardComm": "Comunicación estándar",
+      "recentActivity": "Actividad reciente"
+    },
+    "service": {
+      "title": "Panel de Servicio",
+      "activeSession": "Sesión Activa",
+      "openCommsCenter": "Abrir Centro de Comunicaciones",
+      "availableModules": "Módulos Disponibles",
+      "realtimeChat": "Chat en tiempo real",
+      "internalInbox": "Bandeja interna",
+      "aiAssistant": "Asistente IA",
+      "adminMail": "Correo administrativo",
+      "notAvailable": "No disponible"
+    },
+    "delegated": {
+      "title": "Mi Espacio",
+      "welcome": "Bienvenido",
+      "accessComms": "Accede a tus comunicaciones y servicios desde este espacio.",
+      "quickActions": "Acciones rápidas",
+      "newConversation": "Nueva conversación",
+      "viewMessages": "Ver mensajes",
+      "askHelp": "Pedir ayuda",
+      "yourServices": "Tus servicios",
+      "messages": "Mensajes",
+      "liveConversations": "Conversaciones en vivo",
+      "inbox": "Bandeja de entrada",
+      "internalMail": "Correo interno",
+      "assistant": "Asistente",
+      "smartHelp": "Ayuda inteligente",
+      "officialMail": "Correo Oficial",
+      "adminDocs": "Documentos administrativos",
+      "new": "nuevo",
+      "servicesNotAvailable": "Algunos servicios no están disponibles para tu perfil."
+    }
   },
   "quickDemo": {
     "title": "Demo rápida",
@@ -120,6 +200,7 @@
   },
   "modes": {
     "platform_admin": "Admin Plataforma",
+    "tenant_admin": "Admin Tenant",
     "service": "Servicio",
     "delegated": "Delegado"
   },
@@ -128,5 +209,13 @@
     "business": "Negocio",
     "citizen": "Ciudadano",
     "platform": "Plataforma"
+  },
+  "audit": {
+    "appRegistered": "App registrada",
+    "networkCreated": "Red creada",
+    "moduleEnabled": "Módulo habilitado",
+    "sessionStarted": "Sesión iniciada",
+    "messageSent": "Mensaje enviado",
+    "threadCreated": "Hilo creado"
   }
 }
