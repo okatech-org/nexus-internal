@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
@@ -12,7 +12,8 @@ import {
   ArrowRight,
   Layers,
   Network,
-  Radio
+  Radio,
+  Keyboard
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
@@ -22,6 +23,9 @@ import { AstedPanel } from '@/components/asted/AstedPanel';
 import { CorrespondancePanel } from '@/components/correspondance/CorrespondancePanel';
 import { RealtimePanel } from '@/components/realtime/RealtimePanel';
 import { NetworkTopology } from '@/components/network/NetworkTopology';
+import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
+import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
+import { toast } from 'sonner';
 
 const features = [
   {
@@ -67,8 +71,87 @@ export default function Index() {
   const [isCorrespondanceOpen, setIsCorrespondanceOpen] = useState(false);
   const [isRealtimeOpen, setIsRealtimeOpen] = useState(false);
   const [isTopologyOpen, setIsTopologyOpen] = useState(false);
+  const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
   
   const iCorrespondanceEnabled = capabilities?.modules.icorrespondance.enabled;
+
+  // Define keyboard shortcuts
+  const shortcuts: KeyboardShortcut[] = useMemo(() => [
+    // Navigation shortcuts
+    {
+      key: 'c',
+      description: 'Ouvrir le Centre de Communication',
+      action: () => openCommsCenter(),
+      category: 'navigation',
+    },
+    {
+      key: 'd',
+      description: 'Ouvrir iCorrespondance',
+      action: () => setIsCorrespondanceOpen(true),
+      category: 'navigation',
+    },
+    {
+      key: 'r',
+      description: 'Ouvrir le panneau Realtime',
+      action: () => setIsRealtimeOpen(true),
+      category: 'navigation',
+    },
+    {
+      key: 't',
+      description: 'Ouvrir la Topologie réseau',
+      action: () => setIsTopologyOpen(true),
+      category: 'navigation',
+    },
+    {
+      key: 'Escape',
+      description: 'Fermer le panneau actif',
+      action: () => {
+        setIsCorrespondanceOpen(false);
+        setIsRealtimeOpen(false);
+        setIsTopologyOpen(false);
+        setIsShortcutsOpen(false);
+      },
+      category: 'navigation',
+    },
+    // View shortcuts
+    {
+      key: '?',
+      shift: true,
+      description: 'Afficher les raccourcis clavier',
+      action: () => setIsShortcutsOpen(prev => !prev),
+      category: 'view',
+    },
+    {
+      key: 'n',
+      ctrl: true,
+      description: 'Nouveau dossier (iCorrespondance)',
+      action: () => {
+        setIsCorrespondanceOpen(true);
+        toast.info('Nouveau dossier (fonctionnalité à venir)');
+      },
+      category: 'actions',
+    },
+    {
+      key: 's',
+      ctrl: true,
+      description: 'Signer le document en attente',
+      action: () => {
+        toast.info('Signature (ouvrez un dossier avec des signatures en attente)');
+      },
+      category: 'actions',
+    },
+    {
+      key: 'f',
+      ctrl: true,
+      description: 'Rechercher',
+      action: () => {
+        toast.info('Recherche (fonctionnalité à venir)');
+      },
+      category: 'actions',
+    },
+  ], [openCommsCenter]);
+
+  useKeyboardShortcuts(shortcuts);
   
   useEffect(() => {
     bootstrap();
@@ -97,6 +180,14 @@ export default function Index() {
             </div>
             
             <nav className="flex items-center gap-2">
+              <Button 
+                variant="ghost" 
+                size="icon-sm" 
+                onClick={() => setIsShortcutsOpen(true)}
+                title="Raccourcis clavier (?)"
+              >
+                <Keyboard className="w-4 h-4" />
+              </Button>
               <Button variant="ghost" size="sm" onClick={() => setIsTopologyOpen(true)}>
                 <Network className="w-4 h-4 mr-2" />
                 Topology
@@ -269,6 +360,13 @@ export default function Index() {
       <NetworkTopology
         isOpen={isTopologyOpen}
         onClose={() => setIsTopologyOpen(false)}
+      />
+      
+      {/* Keyboard Shortcuts Dialog */}
+      <KeyboardShortcutsDialog
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+        shortcuts={shortcuts}
       />
     </div>
   );
