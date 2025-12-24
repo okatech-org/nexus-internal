@@ -1,27 +1,47 @@
-import React, { createContext, useContext, useState, useCallback, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useCallback, useEffect, ReactNode } from 'react';
 import { 
   Capabilities, 
-  DevContext, 
+  AppContext,
   Conversation, 
   Message, 
   Thread,
   AstedMessage,
-  AstedSession 
+  AstedSession,
+  App,
+  Network,
 } from '@/types/comms';
 import { 
-  mockCapabilities, 
-  mockDevContext, 
   mockConversations, 
   mockMessages,
   mockThreads 
 } from '@/lib/mock-data';
+import {
+  loadAppContext,
+  saveAppContext,
+  bootstrapCapabilities,
+  getApps,
+  getNetworks,
+  getAppById,
+  getNetworkById,
+} from '@/lib/capabilities';
 
 interface CommsContextType {
   // State
   capabilities: Capabilities | null;
-  devContext: DevContext;
-  isDevMode: boolean;
+  appContext: AppContext;
   isLoading: boolean;
+  
+  // App & Network data
+  apps: App[];
+  networks: Network[];
+  currentApp: App | null;
+  currentNetwork: Network | null;
+  
+  // App context management
+  setCurrentApp: (appId: string) => void;
+  setIdentityMode: (mode: 'service' | 'delegated') => void;
+  setDelegatedActor: (actorId: string, realm: 'citizen' | 'government' | 'business') => void;
+  updateAppModules: (modules: Partial<App['enabled_modules']>) => void;
   
   // iCom
   conversations: Conversation[];
@@ -61,8 +81,14 @@ const CommsContext = createContext<CommsContextType | null>(null);
 export function CommsProvider({ children }: { children: ReactNode }) {
   // Core state
   const [capabilities, setCapabilities] = useState<Capabilities | null>(null);
-  const [devContext] = useState<DevContext>(mockDevContext);
+  const [appContext, setAppContext] = useState<AppContext>(loadAppContext());
   const [isLoading, setIsLoading] = useState(false);
+  
+  // App & Network data
+  const [apps] = useState<App[]>(getApps());
+  const [networks] = useState<Network[]>(getNetworks());
+  const [currentApp, setCurrentAppState] = useState<App | null>(null);
+  const [currentNetwork, setCurrentNetworkState] = useState<Network | null>(null);
   
   // iCom state
   const [conversations, setConversations] = useState<Conversation[]>([]);
@@ -82,15 +108,92 @@ export function CommsProvider({ children }: { children: ReactNode }) {
   const [isAstedOpen, setIsAstedOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<'icom' | 'iboite'>('icom');
   
-  const isDevMode = true; // Always dev mode in sandbox
+  // Set current app
+  const setCurrentApp = useCallback((appId: string) => {
+    const app = getAppById(appId);
+    if (!app) return;
+    
+    const network = getNetworkById(app.network_id);
+    if (!network) return;
+    
+    const newContext: AppContext = {
+      app_id: app.app_id,
+      tenant_id: app.tenant_id,
+      network_id: network.network_id,
+      network_type: network.network_type,
+      mode: 'service',
+      delegated_actor_id: undefined,
+      delegated_realm: undefined,
+    };
+    
+    saveAppContext(newContext);
+    setAppContext(newContext);
+    setCurrentAppState(app);
+    setCurrentNetworkState(network);
+    
+    // Recalculate capabilities
+    const newCapabilities = bootstrapCapabilities(newContext);
+    setCapabilities(newCapabilities);
+  }, []);
+  
+  // Set identity mode
+  const setIdentityMode = useCallback((mode: 'service' | 'delegated') => {
+    const newContext: AppContext = {
+      ...appContext,
+      mode,
+      delegated_actor_id: mode === 'service' ? undefined : appContext.delegated_actor_id,
+      delegated_realm: mode === 'service' ? undefined : appContext.delegated_realm,
+    };
+    
+    saveAppContext(newContext);
+    setAppContext(newContext);
+    
+    // Recalculate capabilities
+    const newCapabilities = bootstrapCapabilities(newContext);
+    setCapabilities(newCapabilities);
+  }, [appContext]);
+  
+  // Set delegated actor
+  const setDelegatedActor = useCallback((actorId: string, realm: 'citizen' | 'government' | 'business') => {
+    const newContext: AppContext = {
+      ...appContext,
+      mode: 'delegated',
+      delegated_actor_id: actorId,
+      delegated_realm: realm,
+    };
+    
+    saveAppContext(newContext);
+    setAppContext(newContext);
+    
+    // Recalculate capabilities
+    const newCapabilities = bootstrapCapabilities(newContext);
+    setCapabilities(newCapabilities);
+  }, [appContext]);
+  
+  // Update app modules (for debug panel simulation)
+  const updateAppModules = useCallback((modules: Partial<App['enabled_modules']>) => {
+    // This would normally update the backend, but in sandbox we just recalculate
+    // For now, capabilities are recalculated on next bootstrap
+  }, []);
   
   // Bootstrap capabilities
   const bootstrap = useCallback(async () => {
     setIsLoading(true);
     try {
       // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      setCapabilities(mockCapabilities);
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      const context = loadAppContext();
+      setAppContext(context);
+      
+      const app = getAppById(context.app_id);
+      const network = app ? getNetworkById(app.network_id) : null;
+      
+      setCurrentAppState(app || null);
+      setCurrentNetworkState(network || null);
+      
+      const caps = bootstrapCapabilities(context);
+      setCapabilities(caps);
       setConversations(mockConversations);
       setThreads(mockThreads);
     } finally {
@@ -104,7 +207,6 @@ export function CommsProvider({ children }: { children: ReactNode }) {
     if (conv) {
       setSelectedConversation(conv);
       setMessages(mockMessages[id] || []);
-      // Mark as read
       setConversations(prev => 
         prev.map(c => c.id === id ? { ...c, unread_count: 0 } : c)
       );
@@ -114,19 +216,24 @@ export function CommsProvider({ children }: { children: ReactNode }) {
   const sendMessage = useCallback((content: string) => {
     if (!selectedConversation) return;
     
+    const senderId = appContext.mode === 'delegated' && appContext.delegated_actor_id 
+      ? appContext.delegated_actor_id 
+      : 'service-account';
+    const senderName = appContext.mode === 'delegated' 
+      ? `Delegated: ${appContext.delegated_actor_id}` 
+      : 'Service Account';
+    
     const newMessage: Message = {
       id: `msg-${Date.now()}`,
       conversation_id: selectedConversation.id,
-      sender_id: devContext.actor_id,
-      sender_name: 'Vous',
+      sender_id: senderId,
+      sender_name: senderName,
       content,
       created_at: new Date().toISOString(),
       status: 'sent',
     };
     
     setMessages(prev => [...prev, newMessage]);
-    
-    // Update last message in conversation
     setConversations(prev => 
       prev.map(c => 
         c.id === selectedConversation.id 
@@ -134,7 +241,7 @@ export function CommsProvider({ children }: { children: ReactNode }) {
           : c
       )
     );
-  }, [selectedConversation, devContext.actor_id]);
+  }, [selectedConversation, appContext]);
   
   // iBoîte actions
   const selectThread = useCallback((id: string) => {
@@ -167,7 +274,6 @@ export function CommsProvider({ children }: { children: ReactNode }) {
     
     setAstedMessages(prev => [...prev, userMessage]);
     
-    // Simulate AI response
     await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 1000));
     
     const aiResponses = [
@@ -207,9 +313,16 @@ export function CommsProvider({ children }: { children: ReactNode }) {
     <CommsContext.Provider
       value={{
         capabilities,
-        devContext,
-        isDevMode,
+        appContext,
         isLoading,
+        apps,
+        networks,
+        currentApp,
+        currentNetwork,
+        setCurrentApp,
+        setIdentityMode,
+        setDelegatedActor,
+        updateAppModules,
         conversations,
         selectedConversation,
         messages,

@@ -24,7 +24,7 @@ export function ThreadList({ showArchived = false }: ThreadListProps) {
             <Mail className="w-12 h-12 text-muted-foreground/50 mb-4" />
           )}
           <p className="text-sm text-muted-foreground">
-            {showArchived ? 'Aucun message archivé' : 'Aucun message'}
+            {showArchived ? 'Aucun thread archivé' : 'Aucun thread dans l\'inbox'}
           </p>
         </div>
       ) : (

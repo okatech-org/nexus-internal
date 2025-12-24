@@ -1,0 +1,38 @@
+[
+  {
+    "network_id": "gov-net-001",
+    "name": "Réseau Gouvernemental",
+    "network_type": "government",
+    "member_apps": ["app-mairie-001", "app-parlement-001", "app-gov-demo"],
+    "modules_policy": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    }
+  },
+  {
+    "network_id": "commercial-net-001",
+    "name": "Réseau Commercial",
+    "network_type": "commercial",
+    "member_apps": ["app-idn-001", "app-business-demo", "app-startup-001"],
+    "modules_policy": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": false
+    }
+  },
+  {
+    "network_id": "sandbox-net",
+    "name": "Sandbox Development",
+    "network_type": "government",
+    "member_apps": ["sandbox-app"],
+    "modules_policy": {
+      "icom": true,
+      "iboite": true,
+      "iasted": true,
+      "icorrespondance": true
+    }
+  }
+]
