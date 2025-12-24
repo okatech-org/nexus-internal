@@ -1,6 +1,14 @@
-import { Realm, NetworkType, ModuleName } from './comms';
+import { Realm, NetworkType, ModuleName, IcomFeatureName } from './comms';
 
 export type DemoAccountMode = 'platform_admin' | 'tenant_admin' | 'service' | 'delegated';
+
+// iCom features configuration for demo accounts
+export interface DemoIcomFeatures {
+  chat: boolean;
+  call: boolean;
+  meeting: boolean;
+  contact: boolean;
+}
 
 export interface DemoAccount {
   id: string;
@@ -13,6 +21,7 @@ export interface DemoAccount {
   network_type: NetworkType;
   actor_id: string | null;
   desired_modules: Record<ModuleName, boolean>;
+  desired_icom_features?: DemoIcomFeatures;
   permissions: string[];
   description: string;
 }
