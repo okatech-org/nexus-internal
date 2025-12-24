@@ -4,7 +4,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell,
   Phone, Video, Users, Clock, CheckCircle, Send, ChevronRight,
-  Calendar, Shield, Building2, Radio, PhoneCall, Mail, Trophy, Command, Search
+  Calendar, Shield, Building2, Radio, PhoneCall, Mail, Trophy, Command, Search,
+  Crown, Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -19,7 +20,9 @@ import { UserMenu } from '@/components/layout/UserMenu';
 import { BadgesPanel } from '@/components/gamification/BadgesPanel';
 import { BadgeCelebration } from '@/components/gamification/BadgeCelebration';
 import { Leaderboard } from '@/components/gamification/Leaderboard';
+import { DailyChallengesPanel } from '@/components/gamification/DailyChallengesPanel';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
+import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -99,9 +102,11 @@ export default function DelegatedDashboard() {
   const { events, isConnected, connect, disconnect } = useRealtime();
   const { stats, badges, unlockedBadges, levelProgress, celebrationBadge, dismissCelebration, userId } = useGamification();
   const globalSearch = useGlobalSearch();
+  const dailyChallenges = useDailyChallenges();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showChallenges, setShowChallenges] = useState(false);
   
   // Auto-connect to realtime on mount
   useEffect(() => {
@@ -378,6 +383,22 @@ export default function DelegatedDashboard() {
                 <Search className="w-5 h-5" />
               </Button>
               
+              {/* Daily Challenges Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowChallenges(true)}
+                className="relative"
+                title="Défis du jour"
+              >
+                <Target className="w-5 h-5 text-orange-500" />
+                {dailyChallenges.completedCount < dailyChallenges.totalChallenges && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
+                    {dailyChallenges.totalChallenges - dailyChallenges.completedCount}
+                  </span>
+                )}
+              </Button>
+              
               {/* Badges Button */}
               <Button
                 variant="outline"
@@ -387,6 +408,16 @@ export default function DelegatedDashboard() {
               >
                 <Trophy className="w-4 h-4 text-amber-500" />
                 <span className="text-sm font-medium">Niv. {stats.level}</span>
+              </Button>
+              
+              {/* Leaderboard Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowLeaderboard(true)}
+                title="Classement"
+              >
+                <Crown className="w-5 h-5 text-purple-500" />
               </Button>
               
               <div className="relative">
@@ -854,6 +885,20 @@ export default function DelegatedDashboard() {
         isOpen={showLeaderboard}
         onClose={() => setShowLeaderboard(false)}
         currentUserId={userId || undefined}
+      />
+      
+      {/* Daily Challenges Panel */}
+      <DailyChallengesPanel
+        isOpen={showChallenges}
+        onClose={() => setShowChallenges(false)}
+        challenges={dailyChallenges.challenges}
+        completedCount={dailyChallenges.completedCount}
+        totalChallenges={dailyChallenges.totalChallenges}
+        earnedReward={dailyChallenges.earnedReward}
+        totalReward={dailyChallenges.totalReward}
+        timeRemaining={dailyChallenges.timeRemaining}
+        allCompleted={dailyChallenges.allCompleted}
+        onClaimBonus={dailyChallenges.claimBonus}
       />
       
       {/* Badge Celebration */}

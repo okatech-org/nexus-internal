@@ -31,7 +31,9 @@ import {
   Building2,
   Briefcase,
   Trophy,
-  Command
+  Command,
+  Crown,
+  Target
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,7 +49,9 @@ import { UserMenu } from '@/components/layout/UserMenu';
 import { BadgesPanel } from '@/components/gamification/BadgesPanel';
 import { BadgeCelebration } from '@/components/gamification/BadgeCelebration';
 import { Leaderboard } from '@/components/gamification/Leaderboard';
+import { DailyChallengesPanel } from '@/components/gamification/DailyChallengesPanel';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
+import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { cn } from '@/lib/utils';
 
 // Mock data for the dashboard
@@ -142,9 +146,11 @@ export default function ServiceDashboard() {
   const { events, isConnected, connect, disconnect } = useRealtime();
   const { stats, badges, unlockedBadges, levelProgress, celebrationBadge, dismissCelebration, userId } = useGamification();
   const globalSearch = useGlobalSearch();
+  const dailyChallenges = useDailyChallenges();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
+  const [showChallenges, setShowChallenges] = useState(false);
   
   // Connect to realtime on mount
   useEffect(() => {
@@ -270,17 +276,44 @@ export default function ServiceDashboard() {
                 </Badge>
               </Button>
               
+              {/* Daily Challenges Button */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowChallenges(true)}
+                className="relative"
+                title="Défis du jour"
+              >
+                <Target className="w-5 h-5 text-orange-500" />
+                {dailyChallenges.completedCount < dailyChallenges.totalChallenges && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
+                    {dailyChallenges.totalChallenges - dailyChallenges.completedCount}
+                  </span>
+                )}
+              </Button>
+              
               {/* Badges Button */}
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={() => setShowBadges(true)}
                 className="relative"
+                title="Badges"
               >
                 <Trophy className="w-5 h-5 text-amber-500" />
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
                   {stats.level}
                 </span>
+              </Button>
+              
+              {/* Leaderboard Button */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowLeaderboard(true)}
+                title="Classement"
+              >
+                <Crown className="w-5 h-5 text-purple-500" />
               </Button>
               
               {/* Notifications */}
@@ -900,6 +933,20 @@ export default function ServiceDashboard() {
         isOpen={showLeaderboard}
         onClose={() => setShowLeaderboard(false)}
         currentUserId={userId || undefined}
+      />
+      
+      {/* Daily Challenges Panel */}
+      <DailyChallengesPanel
+        isOpen={showChallenges}
+        onClose={() => setShowChallenges(false)}
+        challenges={dailyChallenges.challenges}
+        completedCount={dailyChallenges.completedCount}
+        totalChallenges={dailyChallenges.totalChallenges}
+        earnedReward={dailyChallenges.earnedReward}
+        totalReward={dailyChallenges.totalReward}
+        timeRemaining={dailyChallenges.timeRemaining}
+        allCompleted={dailyChallenges.allCompleted}
+        onClaimBonus={dailyChallenges.claimBonus}
       />
       
       {/* Badge Celebration */}
