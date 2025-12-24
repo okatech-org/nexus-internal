@@ -354,6 +354,16 @@ function ApplicationDetail() {
   const navigate = useNavigate();
   const [app, setApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  
+  // Editable form state
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    status: 'active' as string,
+    network_type: 'intranet' as string
+  });
+  const [hasChanges, setHasChanges] = useState(false);
 
   useEffect(() => {
     const fetchApp = async () => {
@@ -369,6 +379,15 @@ function ApplicationDetail() {
 
         if (error) throw error;
         setApp(data);
+        
+        if (data) {
+          setFormData({
+            name: data.name,
+            description: data.description || '',
+            status: data.status,
+            network_type: data.network_type
+          });
+        }
       } catch (error) {
         console.error('Error fetching application:', error);
         toast.error('Application non trouvée');
@@ -379,6 +398,65 @@ function ApplicationDetail() {
 
     fetchApp();
   }, [appId]);
+
+  // Track changes
+  useEffect(() => {
+    if (app) {
+      const changed = 
+        formData.name !== app.name ||
+        formData.description !== (app.description || '') ||
+        formData.status !== app.status ||
+        formData.network_type !== app.network_type;
+      setHasChanges(changed);
+    }
+  }, [formData, app]);
+
+  const handleSave = async () => {
+    if (!app || !hasChanges) return;
+
+    setSaving(true);
+    try {
+      const { error } = await supabase
+        .from('applications')
+        .update({
+          name: formData.name.trim(),
+          description: formData.description.trim() || null,
+          status: formData.status,
+          network_type: formData.network_type
+        })
+        .eq('id', app.id);
+
+      if (error) throw error;
+
+      // Update local state
+      setApp(prev => prev ? {
+        ...prev,
+        name: formData.name.trim(),
+        description: formData.description.trim() || null,
+        status: formData.status,
+        network_type: formData.network_type
+      } : null);
+
+      setHasChanges(false);
+      toast.success('Application mise à jour avec succès');
+    } catch (error) {
+      console.error('Error updating application:', error);
+      toast.error('Erreur lors de la mise à jour');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleReset = () => {
+    if (app) {
+      setFormData({
+        name: app.name,
+        description: app.description || '',
+        status: app.status,
+        network_type: app.network_type
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -423,52 +501,110 @@ function ApplicationDetail() {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
-            {app.status === 'active' ? 'Actif' : 'Désactivé'}
+          <Badge variant={formData.status === 'active' ? 'default' : formData.status === 'suspended' ? 'destructive' : 'secondary'}>
+            {formData.status === 'active' ? 'Actif' : formData.status === 'suspended' ? 'Suspendu' : 'Inactif'}
           </Badge>
-          <Badge variant="outline">{app.network_type}</Badge>
+          <Badge variant="outline" className="capitalize">{formData.network_type}</Badge>
         </div>
       </div>
 
-      {/* Application Info */}
+      {/* Application Info Form */}
       <Card className="bg-card/50 border-border/50">
         <CardHeader>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <Settings className="w-5 h-5" />
-            Informations
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Settings className="w-5 h-5" />
+              Informations
+            </CardTitle>
+            {hasChanges && (
+              <Badge variant="outline" className="text-warning border-warning">
+                Modifications non enregistrées
+              </Badge>
+            )}
+          </div>
+          <CardDescription>
+            Modifiez les informations de l'application
+          </CardDescription>
         </CardHeader>
-        <CardContent className="grid gap-4 md:grid-cols-2">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Nom</label>
-            <Input value={app.name} className="mt-1" readOnly />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Identifiant</label>
-            <Input value={app.app_id} className="mt-1 font-mono" readOnly />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Type de réseau</label>
-            <Input value={app.network_type} className="mt-1 capitalize" readOnly />
-          </div>
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">Créé le</label>
-            <Input 
-              value={new Date(app.created_at).toLocaleDateString('fr-FR', {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-              })} 
-              className="mt-1" 
-              readOnly 
-            />
-          </div>
-          {app.description && (
-            <div className="md:col-span-2">
-              <label className="text-sm font-medium text-muted-foreground">Description</label>
-              <Input value={app.description} className="mt-1" readOnly />
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium">Nom de l'application</label>
+              <Input 
+                value={formData.name} 
+                onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                className="mt-1" 
+                placeholder="Nom de l'application"
+              />
             </div>
-          )}
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Identifiant (non modifiable)</label>
+              <Input value={app.app_id} className="mt-1 font-mono bg-muted/50" readOnly />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Statut</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="active">Actif</option>
+                <option value="inactive">Inactif</option>
+                <option value="suspended">Suspendu</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Type de réseau</label>
+              <select
+                value={formData.network_type}
+                onChange={(e) => setFormData(prev => ({ ...prev, network_type: e.target.value }))}
+                className="mt-1 w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <option value="intranet">Intranet (interne)</option>
+                <option value="extranet">Extranet (partenaires)</option>
+                <option value="internet">Internet (public)</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-muted-foreground">Créé le</label>
+              <Input 
+                value={new Date(app.created_at).toLocaleDateString('fr-FR', {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric'
+                })} 
+                className="mt-1 bg-muted/50" 
+                readOnly 
+              />
+            </div>
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium">Description</label>
+              <Input 
+                value={formData.description} 
+                onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                className="mt-1" 
+                placeholder="Description de l'application (optionnel)"
+              />
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-border/50">
+            <Button 
+              variant="outline" 
+              onClick={handleReset}
+              disabled={!hasChanges || saving}
+            >
+              Annuler
+            </Button>
+            <Button 
+              onClick={handleSave}
+              disabled={!hasChanges || saving || !formData.name.trim()}
+            >
+              {saving && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+              Enregistrer
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
