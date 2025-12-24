@@ -104,6 +104,34 @@
 
     --neural: 280 75% 55%;
     --neural-glow: 280 90% 65%;
+    --icom: 160 70% 40%;
+    --iboite: 35 90% 50%;
+    --success: 142 76% 36%;
+    --warning: 38 92% 50%;
+    
+    /* Glass effects - light mode */
+    --glass-bg: 0 0% 100% / 0.8;
+    --glass-border: 220 13% 85% / 0.5;
+    
+    /* Gradients - light mode */
+    --gradient-surface: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 14% 98%));
+    
+    /* Shadows - light mode */
+    --shadow-sm: 0 2px 8px hsl(220 14% 80% / 0.15);
+    --shadow-md: 0 4px 16px hsl(220 14% 80% / 0.2);
+    --shadow-lg: 0 8px 32px hsl(220 14% 80% / 0.25);
+    --shadow-glow-neural: 0 0 40px hsl(280 90% 65% / 0.2);
+    --shadow-glow-primary: 0 0 30px hsl(217 91% 50% / 0.2);
+
+    /* Sidebar - light mode */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 222 47% 11%;
+    --sidebar-primary: 217 91% 50%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 222 47% 11%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217 91% 50%;
   }
 }
 

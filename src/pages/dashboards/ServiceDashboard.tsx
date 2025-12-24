@@ -37,7 +37,8 @@ import {
   Gift,
   Sparkles,
   UsersRound,
-  Menu
+  Menu,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ import { useGamification } from '@/hooks/useGamification';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { ServiceSidebar } from '@/components/layout/ServiceSidebar';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { BadgesPanel } from '@/components/gamification/BadgesPanel';
 import { BadgeCelebration } from '@/components/gamification/BadgeCelebration';
 import { Leaderboard } from '@/components/gamification/Leaderboard';
@@ -62,6 +64,8 @@ import { WeeklyRewardsPanel } from '@/components/gamification/WeeklyRewardsPanel
 import { MonthlyQuestsPanel } from '@/components/gamification/MonthlyQuestsPanel';
 import { TeamPerformancePanel } from '@/components/gamification/TeamPerformancePanel';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
+import { DetailedCallsView } from '@/components/comms-center/DetailedCallsView';
+import { DetailedConversationsView } from '@/components/comms-center/DetailedConversationsView';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useWeeklyRewards } from '@/hooks/useWeeklyRewards';
@@ -175,6 +179,8 @@ export default function ServiceDashboard() {
   const [showWeeklyRewards, setShowWeeklyRewards] = useState(false);
   const [showMonthlyQuests, setShowMonthlyQuests] = useState(false);
   const [showTeamPerformance, setShowTeamPerformance] = useState(false);
+  const [showDetailedCalls, setShowDetailedCalls] = useState(false);
+  const [showDetailedConversations, setShowDetailedConversations] = useState(false);
   
   // Connect to realtime on mount
   useEffect(() => {
@@ -540,6 +546,9 @@ export default function ServiceDashboard() {
                     </AnimatePresence>
                   </div>
                   
+                  {/* Theme Toggle */}
+                  <ThemeToggle variant="dropdown" />
+                  
                   <UserMenu />
                 </div>
               </div>
@@ -727,7 +736,15 @@ export default function ServiceDashboard() {
                         {isBizProfile ? 'Gérez vos appels commerciaux' : 'Vos appels récents'}
                       </CardDescription>
                     </div>
-                    <Button variant="ghost" size="sm">Voir tout</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={() => setShowDetailedCalls(true)}
+                      className="gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      Voir tout
+                    </Button>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -791,7 +808,15 @@ export default function ServiceDashboard() {
                       </CardTitle>
                       <CardDescription>Vos derniers échanges</CardDescription>
                     </div>
-                    <Button variant="ghost" size="sm">Voir tout</Button>
+                    <Button 
+                      variant="ghost" 
+                      size="sm"
+                      onClick={() => setShowDetailedConversations(true)}
+                      className="gap-1"
+                    >
+                      <Eye className="w-3 h-3" />
+                      Voir tout
+                    </Button>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-3">
@@ -1208,6 +1233,17 @@ export default function ServiceDashboard() {
           globalSearch.close();
           openCommsCenter();
         }}
+      />
+      
+      {/* Detailed Views */}
+      <DetailedCallsView
+        isOpen={showDetailedCalls}
+        onClose={() => setShowDetailedCalls(false)}
+      />
+      
+      <DetailedConversationsView
+        isOpen={showDetailedConversations}
+        onClose={() => setShowDetailedConversations(false)}
       />
     </SidebarInset>
     </div>
