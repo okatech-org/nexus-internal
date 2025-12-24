@@ -15,10 +15,12 @@ import {
   Video,
   Users,
   AlertCircle,
-  Lock
+  Lock,
+  Shield
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
+import { useAuth } from '@/contexts/AuthContext';
 import { ConversationList } from './ConversationList';
 import { ChatView } from './ChatView';
 import { ThreadList } from './ThreadList';
@@ -26,8 +28,9 @@ import { ThreadView } from './ThreadView';
 import { ContactList } from './ContactList';
 import { CallList } from './CallList';
 import { MeetingList } from './MeetingList';
+import { PolicyMatrixPanel } from './PolicyIndicator';
 import { cn } from '@/lib/utils';
-import { IcomFeatureName, IcomFeatureConfig } from '@/types/comms';
+import { IcomFeatureName, IcomFeatureConfig, Realm } from '@/types/comms';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 type InboxView = 'inbox' | 'archived';
@@ -52,10 +55,20 @@ export function CommsCenterDrawer() {
     selectedConversation,
     selectedThread,
   } = useComms();
+
+  const { payload } = useAuth();
   
   const [inboxView, setInboxView] = useState<InboxView>('inbox');
   const [searchQuery, setSearchQuery] = useState('');
   const [icomSubTab, setIcomSubTab] = useState<IcomSubTab>('contact');
+  const [showPolicyMatrix, setShowPolicyMatrix] = useState(false);
+  
+  // Get user's current realm from auth or app context
+  const currentRealm: Realm = (appContext.delegated_realm as Realm) || 
+    (currentNetwork?.network_type === 'government' ? 'government' : 'business');
+  
+  // Get user scopes from auth
+  const userScopes = payload?.scopes || [];
   
   // Get iCom features status
   const icomFeatures = capabilities?.modules.icom.features;
@@ -262,15 +275,51 @@ export function CommsCenterDrawer() {
                 </TooltipProvider>
               )}
 
-              {/* iCom Features Status Banner */}
-              {effectiveTab === 'icom' && icomEnabled && !hasDetailView && disabledIcomFeatures.length > 0 && (
-                <div className="mt-2 p-2 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                    <AlertCircle className="w-3 h-3" />
-                    <span>
-                      {disabledIcomFeatures.length} feature{disabledIcomFeatures.length > 1 ? 's' : ''} désactivée{disabledIcomFeatures.length > 1 ? 's' : ''}
+              {/* iCom Features Status Banner + Policy Toggle */}
+              {effectiveTab === 'icom' && icomEnabled && !hasDetailView && (
+                <div className="mt-2 space-y-2">
+                  {disabledIcomFeatures.length > 0 && (
+                    <div className="p-2 bg-muted/50 rounded-lg">
+                      <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                        <AlertCircle className="w-3 h-3" />
+                        <span>
+                          {disabledIcomFeatures.length} feature{disabledIcomFeatures.length > 1 ? 's' : ''} désactivée{disabledIcomFeatures.length > 1 ? 's' : ''}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Policy Matrix Toggle */}
+                  <button
+                    onClick={() => setShowPolicyMatrix(!showPolicyMatrix)}
+                    className="w-full flex items-center justify-between p-2 rounded-lg bg-primary/5 hover:bg-primary/10 border border-primary/10 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 text-xs">
+                      <Shield className="w-3.5 h-3.5 text-primary" />
+                      <span className="text-muted-foreground">Policy Matrix</span>
+                    </div>
+                    <span className="text-xs text-primary font-medium">
+                      {showPolicyMatrix ? 'Masquer' : 'Afficher'}
                     </span>
-                  </div>
+                  </button>
+                  
+                  {/* Policy Matrix Panel */}
+                  <AnimatePresence>
+                    {showPolicyMatrix && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        exit={{ opacity: 0, height: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <PolicyMatrixPanel
+                          currentRealm={currentRealm}
+                          networkType={currentNetwork?.network_type || 'commercial'}
+                          userScopes={userScopes}
+                        />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               )}
               
@@ -338,7 +387,14 @@ export function CommsCenterDrawer() {
                     <ChatView />
                   ) : (
                     <>
-                      {effectiveIcomSubTab === 'contact' && <ContactList searchQuery={searchQuery} />}
+                      {effectiveIcomSubTab === 'contact' && (
+                        <ContactList 
+                          searchQuery={searchQuery}
+                          currentRealm={currentRealm}
+                          networkType={currentNetwork?.network_type || 'commercial'}
+                          userScopes={userScopes}
+                        />
+                      )}
                       {effectiveIcomSubTab === 'chat' && <ConversationList />}
                       {effectiveIcomSubTab === 'call' && <CallList searchQuery={searchQuery} />}
                       {effectiveIcomSubTab === 'meeting' && <MeetingList searchQuery={searchQuery} />}
