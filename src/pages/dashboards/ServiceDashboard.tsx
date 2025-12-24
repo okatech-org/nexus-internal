@@ -67,6 +67,7 @@ import { TeamPerformancePanel } from '@/components/gamification/TeamPerformanceP
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { DetailedCallsView } from '@/components/comms-center/DetailedCallsView';
 import { DetailedConversationsView } from '@/components/comms-center/DetailedConversationsView';
+import { WeeklyAnalyticsDashboard } from '@/components/analytics/WeeklyAnalyticsDashboard';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { AnimatedSection, staggerContainerVariants, staggerItemVariants } from '@/components/animations/PageTransition';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
@@ -187,6 +188,7 @@ export default function ServiceDashboard() {
   const [showTeamPerformance, setShowTeamPerformance] = useState(false);
   const [showDetailedCalls, setShowDetailedCalls] = useState(false);
   const [showDetailedConversations, setShowDetailedConversations] = useState(false);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   
   // Demo: trigger notifications for missed calls/messages
   useEffect(() => {
@@ -451,8 +453,8 @@ export default function ServiceDashboard() {
                     <Button 
                       variant="ghost" 
                       size="icon"
-                      onClick={() => setShowStats(true)}
-                      title="Statistiques"
+                      onClick={() => setShowAnalytics(true)}
+                      title="Tableau de bord analytique"
                       className="h-8 w-8 sm:h-9 sm:w-9"
                     >
                       <BarChart3 className="w-4 h-4 text-cyan-500" />
@@ -1298,6 +1300,12 @@ export default function ServiceDashboard() {
       <NotificationCenter
         isOpen={showNotificationCenter}
         onClose={() => setShowNotificationCenter(false)}
+      />
+      
+      {/* Weekly Analytics Dashboard */}
+      <WeeklyAnalyticsDashboard
+        isOpen={showAnalytics}
+        onClose={() => setShowAnalytics(false)}
       />
     </SidebarInset>
     </div>
