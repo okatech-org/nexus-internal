@@ -1,1 +1,4 @@
 project_id = "hmmkclvfwgxyiphpuptv"
+
+[functions.send-signature-notification]
+verify_jwt = false

@@ -34,6 +34,46 @@ import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+
+// Send signature notification email
+const sendSignatureNotification = async (
+  signer: SignerInfo,
+  totalSigners: number,
+  documentNames: string[],
+  caseReference: string,
+  caseTitle: string,
+  requestedBy: string,
+  expiresAt: string
+) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-signature-notification', {
+      body: {
+        signerName: signer.signer_name,
+        signerEmail: signer.signer_email,
+        signerRole: signer.signer_role,
+        signerOrder: signer.order,
+        totalSigners,
+        documentNames,
+        caseReference,
+        caseTitle,
+        requestedBy,
+        expiresAt,
+      },
+    });
+    
+    if (error) {
+      console.error('Failed to send notification:', error);
+      return false;
+    }
+    
+    console.log('Notification sent:', data);
+    return true;
+  } catch (err) {
+    console.error('Error sending notification:', err);
+    return false;
+  }
+};
 
 interface CaseViewProps {
   caseItem: Case;
@@ -201,27 +241,81 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
       ip_address: '192.168.1.100',
       timestamp: new Date().toISOString(),
     }, ...prev]);
-  }, [caseItem.id]);
+    
+    // Send notification to the first signer (order 1)
+    const firstSigner = newRequest.signers.find(s => s.order === 1);
+    if (firstSigner) {
+      const docNames = caseItem.documents
+        .filter(d => documentIds.includes(d.id))
+        .map(d => d.name);
+      
+      sendSignatureNotification(
+        firstSigner,
+        newRequest.signers.length,
+        docNames,
+        caseItem.reference,
+        caseItem.title,
+        'Utilisateur courant',
+        newRequest.expires_at
+      ).then(success => {
+        if (success) {
+          toast.success(`Notification envoyée à ${firstSigner.signer_name}`);
+        }
+      });
+    }
+  }, [caseItem.id, caseItem.documents, caseItem.reference, caseItem.title]);
   
   const handleSign = useCallback((requestId: string) => {
-    setSignatureRequests(prev => prev.map(req => {
-      if (req.id !== requestId) return req;
+    setSignatureRequests(prev => {
+      const updatedRequests: SignatureRequest[] = prev.map(req => {
+        if (req.id !== requestId) return req;
+        
+        const updatedSigners = req.signers.map(s => 
+          s.signer_id === 'current-user' 
+            ? { ...s, status: 'signed' as const, signed_at: new Date().toISOString() }
+            : s
+        );
+        
+        const allSigned = updatedSigners.every(s => s.status === 'signed');
+        const newStatus: 'completed' | 'active' = allSigned ? 'completed' : 'active';
+        
+        return {
+          ...req,
+          signers: updatedSigners,
+          status: newStatus,
+          completed_at: allSigned ? new Date().toISOString() : undefined,
+        };
+      });
       
-      const updatedSigners = req.signers.map(s => 
-        s.signer_id === 'current-user' 
-          ? { ...s, status: 'signed' as const, signed_at: new Date().toISOString() }
-          : s
-      );
+      // Find next signer and send notification
+      const updatedRequest = updatedRequests.find(r => r.id === requestId);
+      if (updatedRequest && updatedRequest.status === 'active') {
+        const sortedSigners = [...updatedRequest.signers].sort((a, b) => a.order - b.order);
+        const nextSigner = sortedSigners.find(s => s.status === 'pending');
+        
+        if (nextSigner) {
+          const docNames = caseItem.documents
+            .filter(d => updatedRequest.document_ids.includes(d.id))
+            .map(d => d.name);
+          
+          sendSignatureNotification(
+            nextSigner,
+            updatedRequest.signers.length,
+            docNames,
+            caseItem.reference,
+            caseItem.title,
+            'Utilisateur courant',
+            updatedRequest.expires_at
+          ).then(success => {
+            if (success) {
+              toast.success(`Notification envoyée à ${nextSigner.signer_name}`);
+            }
+          });
+        }
+      }
       
-      const allSigned = updatedSigners.every(s => s.status === 'signed');
-      
-      return {
-        ...req,
-        signers: updatedSigners,
-        status: allSigned ? 'completed' : 'active',
-        completed_at: allSigned ? new Date().toISOString() : undefined,
-      };
-    }));
+      return updatedRequests;
+    });
     
     // Add audit entry
     setAuditLog(prev => [{
@@ -236,7 +330,7 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
       metadata: { signature_hash: `SHA256:${Math.random().toString(36).slice(2, 18)}` },
       timestamp: new Date().toISOString(),
     }, ...prev]);
-  }, [caseItem.id]);
+  }, [caseItem.id, caseItem.documents, caseItem.reference, caseItem.title]);
   
   const handleDecline = useCallback((requestId: string, reason: string) => {
     setSignatureRequests(prev => prev.map(req => {
