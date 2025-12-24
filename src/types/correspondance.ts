@@ -135,4 +135,36 @@ export type AuditAction =
   | 'approval_granted'
   | 'approval_rejected'
   | 'case_status_changed'
-  | 'case_published';
+  | 'case_published'
+  | 'annotation_created'
+  | 'annotation_replied'
+  | 'annotation_resolved';
+
+// Document Annotation Types
+export interface DocumentAnnotation {
+  id: string;
+  document_id: string;
+  created_by: string;
+  created_by_name: string;
+  created_by_avatar?: string;
+  content: string;
+  position: {
+    start_offset: number;
+    end_offset: number;
+    selected_text: string;
+  };
+  status: 'open' | 'resolved';
+  created_at: string;
+  updated_at: string;
+  replies: AnnotationReply[];
+}
+
+export interface AnnotationReply {
+  id: string;
+  annotation_id: string;
+  created_by: string;
+  created_by_name: string;
+  created_by_avatar?: string;
+  content: string;
+  created_at: string;
+}
