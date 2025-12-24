@@ -17,6 +17,8 @@ import { useGamification } from '@/hooks/useGamification';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { UserMenu } from '@/components/layout/UserMenu';
 import { BadgesPanel } from '@/components/gamification/BadgesPanel';
+import { BadgeCelebration } from '@/components/gamification/BadgeCelebration';
+import { Leaderboard } from '@/components/gamification/Leaderboard';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
@@ -95,10 +97,11 @@ export default function DelegatedDashboard() {
   const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
   const { events, isConnected, connect, disconnect } = useRealtime();
-  const { stats, badges, unlockedBadges, levelProgress } = useGamification();
+  const { stats, badges, unlockedBadges, levelProgress, celebrationBadge, dismissCelebration, userId } = useGamification();
   const globalSearch = useGlobalSearch();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
   
   // Auto-connect to realtime on mount
   useEffect(() => {
@@ -844,6 +847,19 @@ export default function DelegatedDashboard() {
         stats={stats}
         levelProgress={levelProgress}
         unlockedCount={unlockedBadges.length}
+      />
+      
+      {/* Leaderboard */}
+      <Leaderboard
+        isOpen={showLeaderboard}
+        onClose={() => setShowLeaderboard(false)}
+        currentUserId={userId || undefined}
+      />
+      
+      {/* Badge Celebration */}
+      <BadgeCelebration
+        badge={celebrationBadge}
+        onDismiss={dismissCelebration}
       />
       
       {/* Global Search Dialog */}

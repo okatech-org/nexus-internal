@@ -1,7 +1,9 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Badge, UserStats, BadgeCategory, LEVEL_THRESHOLDS } from '@/types/gamification';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
-const INITIAL_BADGES: Badge[] = [
+const BADGE_DEFINITIONS: Omit<Badge, 'progress' | 'unlocked' | 'unlockedAt'>[] = [
   // Communication badges
   {
     id: 'first-message',
@@ -11,8 +13,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'common',
     category: 'communication',
     requirement: 1,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'chatterbox',
@@ -22,8 +22,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'rare',
     category: 'communication',
     requirement: 50,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'master-communicator',
@@ -33,8 +31,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'epic',
     category: 'communication',
     requirement: 500,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'voice-hero',
@@ -44,8 +40,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'rare',
     category: 'communication',
     requirement: 10,
-    progress: 0,
-    unlocked: false,
   },
   // Collaboration badges
   {
@@ -56,8 +50,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'rare',
     category: 'collaboration',
     requirement: 5,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'meeting-master',
@@ -67,8 +59,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'epic',
     category: 'collaboration',
     requirement: 50,
-    progress: 0,
-    unlocked: false,
   },
   // Productivity badges
   {
@@ -79,8 +69,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'common',
     category: 'productivity',
     requirement: 10,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'super-networker',
@@ -90,8 +78,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'epic',
     category: 'productivity',
     requirement: 100,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'document-pro',
@@ -101,8 +87,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'rare',
     category: 'productivity',
     requirement: 25,
-    progress: 0,
-    unlocked: false,
   },
   // Exploration badges
   {
@@ -113,8 +97,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'rare',
     category: 'exploration',
     requirement: 5,
-    progress: 0,
-    unlocked: false,
   },
   // Milestone badges
   {
@@ -125,8 +107,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'common',
     category: 'milestone',
     requirement: 3,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'streak-7',
@@ -136,8 +116,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'rare',
     category: 'milestone',
     requirement: 7,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'streak-30',
@@ -147,8 +125,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'legendary',
     category: 'milestone',
     requirement: 30,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'level-5',
@@ -158,8 +134,6 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'epic',
     category: 'milestone',
     requirement: 5,
-    progress: 0,
-    unlocked: false,
   },
   {
     id: 'level-10',
@@ -169,36 +143,120 @@ const INITIAL_BADGES: Badge[] = [
     rarity: 'legendary',
     category: 'milestone',
     requirement: 10,
-    progress: 0,
-    unlocked: false,
   },
 ];
 
-// Simulated initial stats
-const INITIAL_STATS: UserStats = {
-  messagesSent: 47,
-  callsMade: 8,
-  meetingsJoined: 12,
-  contactsAdded: 23,
-  documentsProcessed: 15,
-  daysActive: 14,
-  currentStreak: 5,
-  longestStreak: 7,
-  totalPoints: 850,
-  level: 3,
+const DEFAULT_STATS: UserStats = {
+  messagesSent: 0,
+  callsMade: 0,
+  meetingsJoined: 0,
+  contactsAdded: 0,
+  documentsProcessed: 0,
+  daysActive: 0,
+  currentStreak: 0,
+  longestStreak: 0,
+  totalPoints: 0,
+  level: 1,
 };
 
 export function useGamification() {
-  const [stats, setStats] = useState<UserStats>(INITIAL_STATS);
-  const [newUnlock, setNewUnlock] = useState<Badge | null>(null);
+  const { toast } = useToast();
+  const [stats, setStats] = useState<UserStats>(DEFAULT_STATS);
+  const [unlockedBadgeIds, setUnlockedBadgeIds] = useState<Set<string>>(new Set());
+  const [celebrationBadge, setCelebrationBadge] = useState<Badge | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load user data on mount
+  useEffect(() => {
+    const loadUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        // Use mock data for demo
+        setStats({
+          messagesSent: 47,
+          callsMade: 8,
+          meetingsJoined: 12,
+          contactsAdded: 23,
+          documentsProcessed: 15,
+          daysActive: 14,
+          currentStreak: 5,
+          longestStreak: 7,
+          totalPoints: 850,
+          level: 3,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      setUserId(user.id);
+
+      // Fetch stats
+      const { data: statsData } = await supabase
+        .from('user_gamification_stats')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (statsData) {
+        setStats({
+          messagesSent: statsData.messages_sent,
+          callsMade: statsData.calls_made,
+          meetingsJoined: statsData.meetings_joined,
+          contactsAdded: statsData.contacts_added,
+          documentsProcessed: statsData.documents_processed,
+          daysActive: statsData.days_active,
+          currentStreak: statsData.current_streak,
+          longestStreak: statsData.longest_streak,
+          totalPoints: statsData.total_points,
+          level: statsData.level,
+        });
+      } else {
+        // Create initial stats
+        await supabase.from('user_gamification_stats').insert({
+          user_id: user.id,
+          ...DEFAULT_STATS,
+        });
+      }
+
+      // Fetch unlocked badges
+      const { data: badgesData } = await supabase
+        .from('user_badges')
+        .select('badge_id, celebrated')
+        .eq('user_id', user.id);
+
+      if (badgesData) {
+        const ids = new Set(badgesData.map(b => b.badge_id));
+        setUnlockedBadgeIds(ids);
+
+        // Check for uncelebrated badges
+        const uncelebrated = badgesData.find(b => !b.celebrated);
+        if (uncelebrated) {
+          const badgeDef = BADGE_DEFINITIONS.find(d => d.id === uncelebrated.badge_id);
+          if (badgeDef) {
+            const badge: Badge = {
+              ...badgeDef,
+              progress: badgeDef.requirement,
+              unlocked: true,
+              unlockedAt: new Date().toISOString(),
+            };
+            setCelebrationBadge(badge);
+          }
+        }
+      }
+
+      setIsLoading(false);
+    };
+
+    loadUserData();
+  }, []);
 
   // Calculate badges with current progress
   const badges = useMemo((): Badge[] => {
-    return INITIAL_BADGES.map(badge => {
+    return BADGE_DEFINITIONS.map(badgeDef => {
       let progress = 0;
-      let unlocked = false;
 
-      switch (badge.id) {
+      switch (badgeDef.id) {
         case 'first-message':
         case 'chatterbox':
         case 'master-communicator':
@@ -228,21 +286,20 @@ export function useGamification() {
           progress = stats.level;
           break;
         case 'explorer':
-          // Simplified: count of modules used
           progress = 4;
           break;
       }
 
-      unlocked = progress >= badge.requirement;
+      const unlocked = unlockedBadgeIds.has(badgeDef.id) || progress >= badgeDef.requirement;
 
       return {
-        ...badge,
-        progress: Math.min(progress, badge.requirement),
+        ...badgeDef,
+        progress: Math.min(progress, badgeDef.requirement),
         unlocked,
         unlockedAt: unlocked ? new Date().toISOString() : undefined,
       };
     });
-  }, [stats]);
+  }, [stats, unlockedBadgeIds]);
 
   const unlockedBadges = useMemo(() => badges.filter(b => b.unlocked), [badges]);
   const lockedBadges = useMemo(() => badges.filter(b => !b.unlocked), [badges]);
@@ -261,35 +318,154 @@ export function useGamification() {
     return Math.min((pointsInLevel / pointsNeeded) * 100, 100);
   }, [stats.totalPoints, currentLevelPoints, nextLevelPoints]);
 
-  const addPoints = useCallback((points: number) => {
+  // Sync stats to database
+  const syncStats = useCallback(async (newStats: UserStats) => {
+    if (!userId) return;
+
+    await supabase
+      .from('user_gamification_stats')
+      .update({
+        messages_sent: newStats.messagesSent,
+        calls_made: newStats.callsMade,
+        meetings_joined: newStats.meetingsJoined,
+        contacts_added: newStats.contactsAdded,
+        documents_processed: newStats.documentsProcessed,
+        days_active: newStats.daysActive,
+        current_streak: newStats.currentStreak,
+        longest_streak: newStats.longestStreak,
+        total_points: newStats.totalPoints,
+        level: newStats.level,
+        last_active_date: new Date().toISOString().split('T')[0],
+      })
+      .eq('user_id', userId);
+  }, [userId]);
+
+  // Check and unlock new badges
+  const checkBadgeUnlocks = useCallback(async (newStats: UserStats) => {
+    for (const badgeDef of BADGE_DEFINITIONS) {
+      if (unlockedBadgeIds.has(badgeDef.id)) continue;
+
+      let progress = 0;
+      switch (badgeDef.id) {
+        case 'first-message':
+        case 'chatterbox':
+        case 'master-communicator':
+          progress = newStats.messagesSent;
+          break;
+        case 'voice-hero':
+          progress = newStats.callsMade;
+          break;
+        case 'team-player':
+        case 'meeting-master':
+          progress = newStats.meetingsJoined;
+          break;
+        case 'networker':
+        case 'super-networker':
+          progress = newStats.contactsAdded;
+          break;
+        case 'document-pro':
+          progress = newStats.documentsProcessed;
+          break;
+        case 'streak-3':
+        case 'streak-7':
+        case 'streak-30':
+          progress = newStats.currentStreak;
+          break;
+        case 'level-5':
+        case 'level-10':
+          progress = newStats.level;
+          break;
+      }
+
+      if (progress >= badgeDef.requirement) {
+        // Unlock badge!
+        const newBadge: Badge = {
+          ...badgeDef,
+          progress: badgeDef.requirement,
+          unlocked: true,
+          unlockedAt: new Date().toISOString(),
+        };
+
+        setUnlockedBadgeIds(prev => new Set([...prev, badgeDef.id]));
+        
+        // Show celebration
+        setCelebrationBadge(newBadge);
+
+        // Show toast
+        toast({
+          title: "🎉 Badge débloqué !",
+          description: `${badgeDef.icon} ${badgeDef.name}`,
+        });
+
+        // Save to database
+        if (userId) {
+          await supabase.from('user_badges').insert({
+            user_id: userId,
+            badge_id: badgeDef.id,
+            celebrated: false,
+          });
+        }
+      }
+    }
+  }, [unlockedBadgeIds, userId, toast]);
+
+  const addPoints = useCallback(async (points: number) => {
     setStats(prev => {
       const newTotal = prev.totalPoints + points;
       let newLevel = prev.level;
-      
-      // Check for level up
+
       while (newLevel < LEVEL_THRESHOLDS.length && newTotal >= LEVEL_THRESHOLDS[newLevel]) {
         newLevel++;
       }
-      
-      return {
+
+      const newStats = {
         ...prev,
         totalPoints: newTotal,
         level: newLevel,
       };
+
+      // Sync to database
+      syncStats(newStats);
+      checkBadgeUnlocks(newStats);
+
+      return newStats;
     });
-  }, []);
+  }, [syncStats, checkBadgeUnlocks]);
 
-  const incrementStat = useCallback((stat: keyof UserStats, amount: number = 1) => {
-    setStats(prev => ({
-      ...prev,
-      [stat]: (prev[stat] as number) + amount,
-    }));
-    addPoints(amount * 10);
-  }, [addPoints]);
+  const incrementStat = useCallback(async (stat: keyof UserStats, amount: number = 1) => {
+    setStats(prev => {
+      const newStats = {
+        ...prev,
+        [stat]: (prev[stat] as number) + amount,
+        totalPoints: prev.totalPoints + amount * 10,
+      };
 
-  const dismissNewUnlock = useCallback(() => {
-    setNewUnlock(null);
-  }, []);
+      // Check level up
+      let newLevel = newStats.level;
+      while (newLevel < LEVEL_THRESHOLDS.length && newStats.totalPoints >= LEVEL_THRESHOLDS[newLevel]) {
+        newLevel++;
+      }
+      newStats.level = newLevel;
+
+      // Sync to database
+      syncStats(newStats);
+      checkBadgeUnlocks(newStats);
+
+      return newStats;
+    });
+  }, [syncStats, checkBadgeUnlocks]);
+
+  const dismissCelebration = useCallback(async () => {
+    if (celebrationBadge && userId) {
+      // Mark as celebrated
+      await supabase
+        .from('user_badges')
+        .update({ celebrated: true })
+        .eq('user_id', userId)
+        .eq('badge_id', celebrationBadge.id);
+    }
+    setCelebrationBadge(null);
+  }, [celebrationBadge, userId]);
 
   const getBadgesByCategory = useCallback((category: BadgeCategory) => {
     return badges.filter(b => b.category === category);
@@ -300,13 +476,15 @@ export function useGamification() {
     badges,
     unlockedBadges,
     lockedBadges,
-    newUnlock,
+    celebrationBadge,
     levelProgress,
     nextLevelPoints,
     currentLevelPoints,
     incrementStat,
     addPoints,
-    dismissNewUnlock,
+    dismissCelebration,
     getBadgesByCategory,
+    isLoading,
+    userId,
   };
 }

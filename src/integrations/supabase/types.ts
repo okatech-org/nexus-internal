@@ -286,6 +286,84 @@ export type Database = {
           },
         ]
       }
+      user_badges: {
+        Row: {
+          badge_id: string
+          celebrated: boolean
+          id: string
+          unlocked_at: string
+          user_id: string
+        }
+        Insert: {
+          badge_id: string
+          celebrated?: boolean
+          id?: string
+          unlocked_at?: string
+          user_id: string
+        }
+        Update: {
+          badge_id?: string
+          celebrated?: boolean
+          id?: string
+          unlocked_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      user_gamification_stats: {
+        Row: {
+          calls_made: number
+          contacts_added: number
+          created_at: string
+          current_streak: number
+          days_active: number
+          documents_processed: number
+          id: string
+          last_active_date: string | null
+          level: number
+          longest_streak: number
+          meetings_joined: number
+          messages_sent: number
+          total_points: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          calls_made?: number
+          contacts_added?: number
+          created_at?: string
+          current_streak?: number
+          days_active?: number
+          documents_processed?: number
+          id?: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          meetings_joined?: number
+          messages_sent?: number
+          total_points?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          calls_made?: number
+          contacts_added?: number
+          created_at?: string
+          current_streak?: number
+          days_active?: number
+          documents_processed?: number
+          id?: string
+          last_active_date?: string | null
+          level?: number
+          longest_streak?: number
+          meetings_joined?: number
+          messages_sent?: number
+          total_points?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
