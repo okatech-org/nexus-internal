@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { 
   ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell,
   Phone, Video, Users, Clock, CheckCircle, Send, ChevronRight,
-  Calendar, Shield, Building2, Radio, PhoneCall, Mail
+  Calendar, Shield, Building2, Radio, PhoneCall, Mail, Trophy, Command, Search
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useAuth } from '@/contexts/AuthContext';
 import { useComms } from '@/contexts/CommsContext';
 import { useRealtime } from '@/hooks/useRealtime';
+import { useGamification } from '@/hooks/useGamification';
+import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { UserMenu } from '@/components/layout/UserMenu';
+import { BadgesPanel } from '@/components/gamification/BadgesPanel';
+import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { cn } from '@/lib/utils';
 import { useEffect, useState } from 'react';
 
@@ -91,13 +95,28 @@ export default function DelegatedDashboard() {
   const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
   const { events, isConnected, connect, disconnect } = useRealtime();
+  const { stats, badges, unlockedBadges, levelProgress } = useGamification();
+  const globalSearch = useGlobalSearch();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showBadges, setShowBadges] = useState(false);
   
   // Auto-connect to realtime on mount
   useEffect(() => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
+  
+  // Keyboard shortcut for global search (Cmd/Ctrl + K)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        globalSearch.toggle();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [globalSearch]);
   
   // Check which features are enabled
   const hasChat = hasScope('icom:chat:*');
@@ -333,6 +352,40 @@ export default function DelegatedDashboard() {
             </div>
             
             <div className="flex items-center gap-3">
+              {/* Global Search Button */}
+              <Button
+                variant="outline"
+                className="hidden md:flex items-center gap-2 px-3 h-9 text-muted-foreground hover:text-foreground"
+                onClick={() => globalSearch.open()}
+              >
+                <Search className="w-4 h-4" />
+                <span className="text-sm">Rechercher...</span>
+                <kbd className="ml-2 pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
+                  <Command className="w-3 h-3" />K
+                </kbd>
+              </Button>
+              
+              {/* Mobile Search Button */}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden"
+                onClick={() => globalSearch.open()}
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+              
+              {/* Badges Button */}
+              <Button
+                variant="outline"
+                size="sm"
+                className="hidden sm:flex items-center gap-2"
+                onClick={() => setShowBadges(true)}
+              >
+                <Trophy className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-medium">Niv. {stats.level}</span>
+              </Button>
+              
               <div className="relative">
                 <Button 
                   variant="ghost" 
@@ -782,6 +835,28 @@ export default function DelegatedDashboard() {
           {isConnected ? 'Notifications en temps réel actives' : 'Connexion aux notifications...'}
         </motion.div>
       </main>
+      
+      {/* Badges Panel */}
+      <BadgesPanel 
+        isOpen={showBadges} 
+        onClose={() => setShowBadges(false)}
+        badges={badges}
+        stats={stats}
+        levelProgress={levelProgress}
+        unlockedCount={unlockedBadges.length}
+      />
+      
+      {/* Global Search Dialog */}
+      <GlobalSearchDialog
+        isOpen={globalSearch.isOpen}
+        onClose={globalSearch.close}
+        query={globalSearch.query}
+        onQueryChange={globalSearch.setQuery}
+        results={globalSearch.searchResults}
+        resultsByType={globalSearch.resultsByType}
+        activeFilter={globalSearch.activeFilter}
+        onFilterChange={globalSearch.setActiveFilter}
+      />
     </div>
   );
 }
