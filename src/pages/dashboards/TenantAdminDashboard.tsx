@@ -1,164 +1,603 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+/**
+ * Tenant Admin Dashboard
+ * Complete tenant administration space with sidebar navigation
+ */
+
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Building, AppWindow, Settings, Activity } from 'lucide-react';
+import { 
+  AppWindow, 
+  Settings, 
+  Activity, 
+  Plus, 
+  Search, 
+  MoreVertical,
+  MessageCircle,
+  Inbox,
+  Bot,
+  Users,
+  Check,
+  X,
+  TrendingUp,
+  Clock
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemo } from '@/contexts/DemoContext';
-import { UserMenu } from '@/components/layout/UserMenu';
+import { AdminLayout } from '@/components/layout/AdminLayout';
 import { cn } from '@/lib/utils';
+import { useState } from 'react';
+
+// ============= Sub-Pages =============
+
+function DashboardOverview() {
+  const { t } = useTranslation();
+  const { payload } = useAuth();
+  const { apps } = useDemo();
+  
+  const tenantApps = apps.filter(app => app.tenant_id === payload?.tenant_id);
+  const activeApps = tenantApps.filter(app => app.status === 'active');
+  
+  const stats = [
+    { label: 'Applications', value: tenantApps.length, icon: AppWindow, change: '+2 ce mois' },
+    { label: 'Utilisateurs actifs', value: 24, icon: Users, change: '+5 cette semaine' },
+    { label: 'Messages envoyés', value: 156, icon: MessageCircle, change: '+23 aujourd\'hui' },
+    { label: 'Taux d\'activité', value: '92%', icon: TrendingUp, change: '+3%' },
+  ];
+
+  const recentActivity = [
+    { time: '10:42:15', action: 'Module activé', details: 'iAsted', user: 'admin@ministry.gov' },
+    { time: '10:41:30', action: 'Message envoyé', details: 'iCom', user: 'user@ministry.gov' },
+    { time: '10:40:12', action: 'Thread créé', details: 'iBoîte', user: 'agent@ministry.gov' },
+    { time: '10:38:45', action: 'Utilisateur ajouté', details: 'Jean Dupont', user: 'admin@ministry.gov' },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Stats Grid */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <Card key={stat.label} className="bg-card/50 border-border/50">
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {stat.label}
+              </CardTitle>
+              <stat.icon className="w-4 h-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stat.value}</div>
+              <p className="text-xs text-muted-foreground mt-1">{stat.change}</p>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        {/* Quick Actions */}
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg">Actions rapides</CardTitle>
+          </CardHeader>
+          <CardContent className="grid gap-3">
+            <Button variant="outline" className="justify-start gap-2">
+              <Plus className="w-4 h-4" />
+              Nouvelle application
+            </Button>
+            <Button variant="outline" className="justify-start gap-2">
+              <Users className="w-4 h-4" />
+              Inviter un utilisateur
+            </Button>
+            <Button variant="outline" className="justify-start gap-2">
+              <Settings className="w-4 h-4" />
+              Configurer les modules
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg">Activité récente</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {recentActivity.map((log, i) => (
+                <div key={i} className="flex items-center gap-3 text-sm py-2 border-b border-border/50 last:border-0">
+                  <Clock className="w-3 h-3 text-muted-foreground shrink-0" />
+                  <span className="text-muted-foreground font-mono text-xs">{log.time}</span>
+                  <span className="text-foreground flex-1">{log.action}</span>
+                  <Badge variant="secondary" className="text-xs">{log.details}</Badge>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </motion.div>
+  );
+}
+
+function AppsList() {
+  const { t } = useTranslation();
+  const { payload } = useAuth();
+  const { apps } = useDemo();
+  const [search, setSearch] = useState('');
+  
+  const tenantApps = apps.filter(app => 
+    app.tenant_id === payload?.tenant_id &&
+    app.name.toLowerCase().includes(search.toLowerCase())
+  );
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input 
+            placeholder="Rechercher une application..." 
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <Button className="gap-2">
+          <Plus className="w-4 h-4" />
+          Nouvelle application
+        </Button>
+      </div>
+
+      <div className="grid gap-4">
+        {tenantApps.length > 0 ? tenantApps.map((app) => (
+          <Card key={app.app_id} className="bg-card/50 border-border/50">
+            <CardContent className="p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
+                    <AppWindow className="w-5 h-5 text-primary" />
+                  </div>
+                  <div>
+                    <h3 className="font-medium text-foreground">{app.name}</h3>
+                    <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3">
+                  <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
+                    {app.status === 'active' ? 'Actif' : 'Désactivé'}
+                  </Badge>
+                  
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Configurer</DropdownMenuItem>
+                      <DropdownMenuItem>Modules</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">Désactiver</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+              
+              <div className="mt-4 flex gap-2">
+                {Object.entries(app.enabled_modules).map(([module, enabled]) => (
+                  <span 
+                    key={module}
+                    className={cn(
+                      "px-2 py-0.5 rounded text-xs",
+                      enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {module}
+                  </span>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )) : (
+          <Card className="bg-card/50 border-border/50">
+            <CardContent className="py-12 text-center text-muted-foreground">
+              Aucune application trouvée
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
+function ModulesConfig() {
+  const { t } = useTranslation();
+  
+  const modules = [
+    { 
+      id: 'icom', 
+      name: 'iCom', 
+      description: 'Communication instantanée', 
+      icon: MessageCircle,
+      features: ['Chat', 'Appels vocaux', 'Visioconférence'],
+      enabled: true 
+    },
+    { 
+      id: 'iboite', 
+      name: 'iBoîte', 
+      description: 'Messagerie asynchrone', 
+      icon: Inbox,
+      features: ['Threads', 'Pièces jointes', 'Archivage'],
+      enabled: true 
+    },
+    { 
+      id: 'iasted', 
+      name: 'iAsted', 
+      description: 'Assistant IA', 
+      icon: Bot,
+      features: ['Chatbot', 'Analyse de documents', 'Résumés automatiques'],
+      enabled: false 
+    },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="grid gap-4">
+        {modules.map((module) => (
+          <Card key={module.id} className="bg-card/50 border-border/50">
+            <CardContent className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="flex items-start gap-4">
+                  <div className={cn(
+                    "w-12 h-12 rounded-xl flex items-center justify-center",
+                    module.enabled ? "bg-primary/20" : "bg-muted"
+                  )}>
+                    <module.icon className={cn(
+                      "w-6 h-6",
+                      module.enabled ? "text-primary" : "text-muted-foreground"
+                    )} />
+                  </div>
+                  <div>
+                    <h3 className="font-semibold text-foreground">{module.name}</h3>
+                    <p className="text-sm text-muted-foreground">{module.description}</p>
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      {module.features.map((feature) => (
+                        <Badge key={feature} variant="outline" className="text-xs">
+                          {feature}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                <Switch defaultChecked={module.enabled} />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    </motion.div>
+  );
+}
+
+function IComConfig() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <MessageCircle className="w-5 h-5 text-primary" />
+            Configuration iCom
+          </CardTitle>
+          <CardDescription>
+            Paramètres de communication instantanée pour votre tenant
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Chat</h4>
+              <p className="text-sm text-muted-foreground">Messages instantanés entre utilisateurs</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Appels vocaux</h4>
+              <p className="text-sm text-muted-foreground">Appels audio entre utilisateurs</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Visioconférence</h4>
+              <p className="text-sm text-muted-foreground">Appels vidéo et réunions</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <h4 className="font-medium">Appels cross-realm</h4>
+              <p className="text-sm text-muted-foreground">Autoriser les appels entre différents realms</p>
+            </div>
+            <Switch />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function IBoiteConfig() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Inbox className="w-5 h-5 text-primary" />
+            Configuration iBoîte
+          </CardTitle>
+          <CardDescription>
+            Paramètres de messagerie asynchrone
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Threads</h4>
+              <p className="text-sm text-muted-foreground">Conversations organisées en fils</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Pièces jointes</h4>
+              <p className="text-sm text-muted-foreground">Autoriser l'envoi de fichiers</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <h4 className="font-medium">Archivage automatique</h4>
+              <p className="text-sm text-muted-foreground">Archiver les threads après 30 jours</p>
+            </div>
+            <Switch />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function IAstedConfig() {
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Bot className="w-5 h-5 text-primary" />
+            Configuration iAsted
+          </CardTitle>
+          <CardDescription>
+            Paramètres de l'assistant IA
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Chatbot</h4>
+              <p className="text-sm text-muted-foreground">Assistant conversationnel IA</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3 border-b border-border/50">
+            <div>
+              <h4 className="font-medium">Analyse de documents</h4>
+              <p className="text-sm text-muted-foreground">Extraction d'informations automatique</p>
+            </div>
+            <Switch defaultChecked />
+          </div>
+          <div className="flex items-center justify-between py-3">
+            <div>
+              <h4 className="font-medium">Résumés automatiques</h4>
+              <p className="text-sm text-muted-foreground">Génération de résumés de conversations</p>
+            </div>
+            <Switch />
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+function UsersList() {
+  const users = [
+    { id: '1', name: 'Jean Dupont', email: 'jean.dupont@ministry.gov', role: 'Admin', status: 'active' },
+    { id: '2', name: 'Marie Martin', email: 'marie.martin@ministry.gov', role: 'Agent', status: 'active' },
+    { id: '3', name: 'Pierre Durand', email: 'pierre.durand@ministry.gov', role: 'Agent', status: 'inactive' },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="flex items-center justify-between">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Rechercher un utilisateur..." className="pl-9" />
+        </div>
+        <Button className="gap-2">
+          <Plus className="w-4 h-4" />
+          Inviter un utilisateur
+        </Button>
+      </div>
+
+      <Card className="bg-card/50 border-border/50">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Nom</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Rôle</TableHead>
+              <TableHead>Statut</TableHead>
+              <TableHead className="w-12"></TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {users.map((user) => (
+              <TableRow key={user.id}>
+                <TableCell className="font-medium">{user.name}</TableCell>
+                <TableCell className="text-muted-foreground">{user.email}</TableCell>
+                <TableCell>
+                  <Badge variant="outline">{user.role}</Badge>
+                </TableCell>
+                <TableCell>
+                  <Badge variant={user.status === 'active' ? 'default' : 'secondary'}>
+                    {user.status === 'active' ? 'Actif' : 'Inactif'}
+                  </Badge>
+                </TableCell>
+                <TableCell>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem>Modifier</DropdownMenuItem>
+                      <DropdownMenuItem>Permissions</DropdownMenuItem>
+                      <DropdownMenuItem className="text-destructive">Désactiver</DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </motion.div>
+  );
+}
+
+function AuditLog() {
+  const logs = [
+    { id: '1', timestamp: '2024-01-15 10:42:15', action: 'MODULE_ENABLED', details: 'iAsted activé', user: 'admin@ministry.gov', ip: '192.168.1.1' },
+    { id: '2', timestamp: '2024-01-15 10:41:30', action: 'MESSAGE_SENT', details: 'Message iCom envoyé', user: 'user@ministry.gov', ip: '192.168.1.2' },
+    { id: '3', timestamp: '2024-01-15 10:40:12', action: 'THREAD_CREATED', details: 'Thread iBoîte créé', user: 'agent@ministry.gov', ip: '192.168.1.3' },
+    { id: '4', timestamp: '2024-01-15 10:38:45', action: 'USER_ADDED', details: 'Utilisateur ajouté', user: 'admin@ministry.gov', ip: '192.168.1.1' },
+    { id: '5', timestamp: '2024-01-15 10:35:20', action: 'CONFIG_CHANGED', details: 'Configuration modifiée', user: 'admin@ministry.gov', ip: '192.168.1.1' },
+  ];
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <div className="flex items-center gap-4">
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input placeholder="Rechercher dans les logs..." className="pl-9" />
+        </div>
+      </div>
+
+      <Card className="bg-card/50 border-border/50">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Horodatage</TableHead>
+              <TableHead>Action</TableHead>
+              <TableHead>Détails</TableHead>
+              <TableHead>Utilisateur</TableHead>
+              <TableHead>IP</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {logs.map((log) => (
+              <TableRow key={log.id}>
+                <TableCell className="font-mono text-xs text-muted-foreground">
+                  {log.timestamp}
+                </TableCell>
+                <TableCell>
+                  <Badge variant="outline" className="font-mono text-xs">
+                    {log.action}
+                  </Badge>
+                </TableCell>
+                <TableCell>{log.details}</TableCell>
+                <TableCell className="text-muted-foreground">{log.user}</TableCell>
+                <TableCell className="font-mono text-xs text-muted-foreground">{log.ip}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </Card>
+    </motion.div>
+  );
+}
+
+function TenantSettings() {
+  const { payload } = useAuth();
+  
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle>Paramètres du Tenant</CardTitle>
+          <CardDescription>Configuration générale de votre organisation</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium">ID du Tenant</label>
+              <Input value={payload?.tenant_id || ''} disabled className="mt-1.5 font-mono" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Nom de l'organisation</label>
+              <Input defaultValue="Ministry Admin" className="mt-1.5" />
+            </div>
+          </div>
+          
+          <div>
+            <label className="text-sm font-medium">Description</label>
+            <Input defaultValue="Administration du ministère" className="mt-1.5" />
+          </div>
+          
+          <Button>Sauvegarder</Button>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
+}
+
+// ============= Main Dashboard Component =============
 
 export default function TenantAdminDashboard() {
   const { t } = useTranslation();
   const { payload } = useAuth();
-  const { apps } = useDemo();
-  const [activeTab, setActiveTab] = useState('apps');
-  
-  // Filter apps for current tenant
-  const tenantApps = apps.filter(app => app.tenant_id === payload?.tenant_id);
-  
+  const navigate = useNavigate();
+
+  // Redirect if not a tenant admin
+  if (!payload?.scopes?.includes('tenant:*')) {
+    return <Navigate to="/forbidden" replace />;
+  }
+
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-blue-500/20 flex items-center justify-center">
-                  <Building className="w-5 h-5 text-blue-400" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">{t('dashboard.tenantAdmin.title')}</h1>
-                  <p className="text-xs text-muted-foreground">{payload?.tenant_id}</p>
-                </div>
-              </div>
-            </div>
-            
-            <UserMenu />
-          </div>
-        </div>
-      </header>
-      
-      <main className="container mx-auto px-6 py-8">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="mb-6">
-            <TabsTrigger value="apps" className="gap-2">
-              <AppWindow className="w-4 h-4" />
-              {t('dashboard.tenantAdmin.myApps')}
-            </TabsTrigger>
-            <TabsTrigger value="modules" className="gap-2">
-              <Settings className="w-4 h-4" />
-              {t('dashboard.tenantAdmin.modules')}
-            </TabsTrigger>
-            <TabsTrigger value="audit" className="gap-2">
-              <Activity className="w-4 h-4" />
-              {t('dashboard.tenantAdmin.activity')}
-            </TabsTrigger>
-          </TabsList>
-          
-          {/* Apps */}
-          <TabsContent value="apps">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">{t('dashboard.tenantAdmin.tenantApps')}</h2>
-              
-              <div className="grid gap-4">
-                {tenantApps.length > 0 ? tenantApps.map((app) => (
-                  <div key={app.app_id} className="glass rounded-xl p-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
-                          <AppWindow className="w-5 h-5 text-primary" />
-                        </div>
-                        <div>
-                          <h3 className="font-medium text-foreground">{app.name}</h3>
-                          <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
-                        </div>
-                      </div>
-                      
-                      <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
-                        {app.status === 'active' ? t('common.active') : t('common.disabled')}
-                      </Badge>
-                    </div>
-                    
-                    <div className="mt-4 flex gap-2">
-                      {Object.entries(app.enabled_modules).map(([module, enabled]) => (
-                        <span 
-                          key={module}
-                          className={cn(
-                            "px-2 py-0.5 rounded text-xs",
-                            enabled ? "bg-success/20 text-success" : "bg-muted text-muted-foreground"
-                          )}
-                        >
-                          {module}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )) : (
-                  <div className="text-center py-12 text-muted-foreground">
-                    {t('dashboard.tenantAdmin.noApps')}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </TabsContent>
-          
-          {/* Modules */}
-          <TabsContent value="modules">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">{t('dashboard.tenantAdmin.modulesConfig')}</h2>
-              
-              <div className="glass rounded-xl p-6 space-y-4">
-                {['icom', 'iboite', 'iasted', 'icorrespondance'].map((module) => (
-                  <div key={module} className="flex items-center justify-between py-3 border-b border-border last:border-0">
-                    <div>
-                      <h4 className="font-medium text-foreground capitalize">{module}</h4>
-                      <p className="text-xs text-muted-foreground">
-                        {module === 'icorrespondance' ? t('dashboard.tenantAdmin.adminMail') : t('dashboard.tenantAdmin.standardComm')}
-                      </p>
-                    </div>
-                    <Switch defaultChecked={module !== 'icorrespondance'} />
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          </TabsContent>
-          
-          {/* Audit */}
-          <TabsContent value="audit">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-              <h2 className="text-lg font-semibold mb-6">{t('dashboard.tenantAdmin.recentActivity')}</h2>
-              
-              <div className="glass rounded-xl p-4">
-                <div className="space-y-3">
-                  {[
-                    { time: '10:42:15', action: t('audit.moduleEnabled'), details: 'iAsted', app: 'gov-app-1' },
-                    { time: '10:41:30', action: t('audit.messageSent'), details: 'iCom', app: 'gov-app-1' },
-                    { time: '10:40:12', action: t('audit.threadCreated'), details: 'iBoîte', app: 'gov-app-1' },
-                  ].map((log, i) => (
-                    <div key={i} className="flex items-center gap-4 text-sm py-2 border-b border-border last:border-0">
-                      <span className="text-muted-foreground font-mono text-xs w-20">{log.time}</span>
-                      <span className="text-foreground flex-1">{log.action}</span>
-                      <span className="text-muted-foreground">{log.details}</span>
-                      <span className="text-primary text-xs font-mono">{log.app}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </TabsContent>
-        </Tabs>
-      </main>
-    </div>
+    <AdminLayout 
+      adminType="tenant" 
+      title="Tenant Administration"
+      subtitle={payload?.tenant_id}
+    >
+      <Routes>
+        <Route index element={<DashboardOverview />} />
+        <Route path="apps" element={<AppsList />} />
+        <Route path="modules" element={<ModulesConfig />} />
+        <Route path="icom" element={<IComConfig />} />
+        <Route path="iboite" element={<IBoiteConfig />} />
+        <Route path="iasted" element={<IAstedConfig />} />
+        <Route path="users" element={<UsersList />} />
+        <Route path="audit" element={<AuditLog />} />
+        <Route path="settings" element={<TenantSettings />} />
+      </Routes>
+    </AdminLayout>
   );
 }

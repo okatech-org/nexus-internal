@@ -63,7 +63,7 @@ const App = () => (
                     <PlatformAdminDashboard />
                   </AuthGuard>
                 } />
-                <Route path="/admin/tenant" element={
+                <Route path="/admin/tenant/*" element={
                   <AuthGuard requiredScopes={['tenant:*']}>
                     <TenantAdminDashboard />
                   </AuthGuard>
