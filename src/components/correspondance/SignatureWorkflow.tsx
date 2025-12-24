@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   PenTool, 
@@ -10,7 +10,11 @@ import {
   User,
   AlertTriangle,
   Fingerprint,
-  Lock
+  Lock,
+  ArrowDown,
+  Plus,
+  Trash2,
+  GripVertical
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -51,6 +55,32 @@ const statusConfig = {
   signed: { icon: CheckCircle, color: 'text-success', bg: 'bg-success/20', label: 'Signé' },
   declined: { icon: XCircle, color: 'text-destructive', bg: 'bg-destructive/20', label: 'Refusé' },
   expired: { icon: AlertTriangle, color: 'text-muted-foreground', bg: 'bg-muted', label: 'Expiré' },
+  waiting: { icon: Clock, color: 'text-muted-foreground', bg: 'bg-muted', label: 'En file d\'attente' },
+};
+
+interface SignerInput {
+  name: string;
+  email: string;
+  role: string;
+}
+
+// Check if a signer can sign based on sequential order
+const canSignerSign = (signer: SignerInfo, allSigners: SignerInfo[]): boolean => {
+  // Get all signers with lower order (must sign before this one)
+  const previousSigners = allSigners.filter(s => s.order < signer.order);
+  // All previous signers must have signed
+  return previousSigners.every(s => s.status === 'signed');
+};
+
+// Get the current active signer (lowest order pending signer who can sign)
+const getCurrentActiveSigner = (signers: SignerInfo[]): SignerInfo | null => {
+  const sortedSigners = [...signers].sort((a, b) => a.order - b.order);
+  for (const signer of sortedSigners) {
+    if (signer.status === 'pending' && canSignerSign(signer, signers)) {
+      return signer;
+    }
+  }
+  return null;
 };
 
 export function SignatureWorkflow({
@@ -69,39 +99,58 @@ export function SignatureWorkflow({
   const [showDeclineDialog, setShowDeclineDialog] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<SignatureRequest | null>(null);
   const [selectedDocIds, setSelectedDocIds] = useState<string[]>([]);
-  const [signerName, setSignerName] = useState('');
-  const [signerEmail, setSignerEmail] = useState('');
-  const [signerRole, setSignerRole] = useState('');
+  const [signers, setSigners] = useState<SignerInput[]>([{ name: '', email: '', role: '' }]);
   const [declineReason, setDeclineReason] = useState('');
   const [signatureCode, setSignatureCode] = useState('');
   const [isVerifying, setIsVerifying] = useState(false);
 
-  const pendingForUser = signatureRequests.filter(req => 
-    req.status === 'active' && 
-    req.signers.some(s => s.signer_id === currentUserId && s.status === 'pending')
-  );
+  // Check if current user has pending signatures they can actually sign (respecting order)
+  const pendingForUser = useMemo(() => {
+    return signatureRequests.filter(req => {
+      if (req.status !== 'active') return false;
+      const userSigner = req.signers.find(s => s.signer_id === currentUserId && s.status === 'pending');
+      if (!userSigner) return false;
+      return canSignerSign(userSigner, req.signers);
+    });
+  }, [signatureRequests, currentUserId]);
+
+  const addSigner = useCallback(() => {
+    setSigners(prev => [...prev, { name: '', email: '', role: '' }]);
+  }, []);
+
+  const removeSigner = useCallback((index: number) => {
+    setSigners(prev => prev.filter((_, i) => i !== index));
+  }, []);
+
+  const updateSigner = useCallback((index: number, field: keyof SignerInput, value: string) => {
+    setSigners(prev => prev.map((s, i) => i === index ? { ...s, [field]: value } : s));
+  }, []);
 
   const handleRequestSignature = useCallback(() => {
-    if (selectedDocIds.length === 0 || !signerName || !signerEmail) {
-      toast.error('Veuillez remplir tous les champs obligatoires');
+    if (selectedDocIds.length === 0) {
+      toast.error('Veuillez sélectionner au moins un document');
       return;
     }
 
-    onRequestSignature(selectedDocIds, [{
-      signer_id: `signer-${Date.now()}`,
-      signer_name: signerName,
-      signer_email: signerEmail,
-      signer_role: signerRole || 'Signataire',
-      order: 1,
-    }]);
+    const validSigners = signers.filter(s => s.name && s.email);
+    if (validSigners.length === 0) {
+      toast.error('Veuillez ajouter au moins un signataire valide');
+      return;
+    }
+
+    onRequestSignature(selectedDocIds, validSigners.map((s, idx) => ({
+      signer_id: `signer-${Date.now()}-${idx}`,
+      signer_name: s.name,
+      signer_email: s.email,
+      signer_role: s.role || 'Signataire',
+      order: idx + 1, // Order based on position in list
+    })));
 
     setShowRequestDialog(false);
     setSelectedDocIds([]);
-    setSignerName('');
-    setSignerEmail('');
-    setSignerRole('');
-    toast.success('Demande de signature envoyée');
-  }, [selectedDocIds, signerName, signerEmail, signerRole, onRequestSignature]);
+    setSigners([{ name: '', email: '', role: '' }]);
+    toast.success(`Demande de signature envoyée à ${validSigners.length} signataire(s)`);
+  }, [selectedDocIds, signers, onRequestSignature]);
 
   const handleSign = useCallback(async () => {
     if (!selectedRequest || signatureCode.length !== 6) {
@@ -227,59 +276,99 @@ export function SignatureWorkflow({
                   </span>
                 </div>
 
+                {/* Sequential Workflow Indicator */}
+                <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground">
+                  <ArrowDown className="w-3 h-3" />
+                  <span>Signature séquentielle (ordre de priorité)</span>
+                </div>
+
                 {/* Signers */}
                 <div className="space-y-2">
-                  {request.signers.map((signer) => {
+                  {[...request.signers].sort((a, b) => a.order - b.order).map((signer, idx) => {
                     const config = statusConfig[signer.status];
                     const StatusIcon = config.icon;
                     const isCurrentUser = signer.signer_id === currentUserId;
-                    const canSign = isCurrentUser && signer.status === 'pending' && request.status === 'active';
+                    const userCanSign = canSignerSign(signer, request.signers);
+                    const canSign = isCurrentUser && signer.status === 'pending' && request.status === 'active' && userCanSign;
+                    const isWaiting = signer.status === 'pending' && !userCanSign;
+                    const activeSigner = getCurrentActiveSigner(request.signers);
+                    const isActive = activeSigner?.id === signer.id;
+
+                    const displayConfig = isWaiting ? statusConfig.waiting : config;
+                    const DisplayIcon = displayConfig.icon;
 
                     return (
-                      <div
-                        key={signer.id}
-                        className={cn(
-                          "flex items-center justify-between p-2 rounded-lg",
-                          canSign ? "bg-warning/10 border border-warning/30" : "bg-background/50"
-                        )}
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", config.bg)}>
-                            <StatusIcon className={cn("w-4 h-4", config.color)} />
+                      <div key={signer.id}>
+                        <div
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded-lg transition-all",
+                            canSign ? "bg-warning/10 border-2 border-warning/50 shadow-sm" : 
+                            isActive ? "bg-primary/5 border border-primary/20" :
+                            "bg-background/50"
+                          )}
+                        >
+                          <div className="flex items-center gap-3">
+                            {/* Order Badge */}
+                            <div className={cn(
+                              "w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold",
+                              signer.status === 'signed' ? "bg-success text-success-foreground" :
+                              isActive ? "bg-primary text-primary-foreground" :
+                              "bg-muted text-muted-foreground"
+                            )}>
+                              {signer.order}
+                            </div>
+                            
+                            <div className={cn("w-8 h-8 rounded-full flex items-center justify-center", displayConfig.bg)}>
+                              <DisplayIcon className={cn("w-4 h-4", displayConfig.color)} />
+                            </div>
+                            <div>
+                              <p className="text-sm font-medium text-foreground">
+                                {signer.signer_name}
+                                {isCurrentUser && <span className="text-xs text-primary ml-2">(vous)</span>}
+                              </p>
+                              <p className="text-xs text-muted-foreground">{signer.signer_role}</p>
+                            </div>
                           </div>
-                          <div>
-                            <p className="text-sm font-medium text-foreground">
-                              {signer.signer_name}
-                              {isCurrentUser && <span className="text-xs text-primary ml-2">(vous)</span>}
-                            </p>
-                            <p className="text-xs text-muted-foreground">{signer.signer_role}</p>
-                          </div>
+                          
+                          {canSign ? (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-destructive hover:text-destructive"
+                                onClick={() => openDeclineDialog(request)}
+                              >
+                                Refuser
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => openSignDialog(request)}
+                              >
+                                <PenTool className="w-4 h-4 mr-1" />
+                                Signer
+                              </Button>
+                            </div>
+                          ) : signer.signed_at ? (
+                            <span className="text-xs text-muted-foreground">
+                              {format(new Date(signer.signed_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
+                            </span>
+                          ) : isWaiting ? (
+                            <span className="text-xs text-muted-foreground italic">
+                              Attend les signatures précédentes
+                            </span>
+                          ) : (
+                            <span className={cn("text-xs", displayConfig.color)}>{displayConfig.label}</span>
+                          )}
                         </div>
                         
-                        {canSign ? (
-                          <div className="flex gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => openDeclineDialog(request)}
-                            >
-                              Refuser
-                            </Button>
-                            <Button
-                              size="sm"
-                              onClick={() => openSignDialog(request)}
-                            >
-                              <PenTool className="w-4 h-4 mr-1" />
-                              Signer
-                            </Button>
+                        {/* Arrow between signers */}
+                        {idx < request.signers.length - 1 && (
+                          <div className="flex justify-center py-1">
+                            <ArrowDown className={cn(
+                              "w-4 h-4",
+                              signer.status === 'signed' ? "text-success" : "text-muted-foreground/30"
+                            )} />
                           </div>
-                        ) : signer.signed_at ? (
-                          <span className="text-xs text-muted-foreground">
-                            {format(new Date(signer.signed_at), "d MMM yyyy 'à' HH:mm", { locale: fr })}
-                          </span>
-                        ) : (
-                          <span className={cn("text-xs", config.color)}>{config.label}</span>
                         )}
                       </div>
                     );
@@ -375,24 +464,85 @@ export function SignatureWorkflow({
               </div>
             </div>
 
-            {/* Signer Info */}
-            <div className="space-y-3">
-              <Input
-                placeholder="Nom du signataire *"
-                value={signerName}
-                onChange={(e) => setSignerName(e.target.value)}
-              />
-              <Input
-                placeholder="Email du signataire *"
-                type="email"
-                value={signerEmail}
-                onChange={(e) => setSignerEmail(e.target.value)}
-              />
-              <Input
-                placeholder="Rôle (ex: Directeur)"
-                value={signerRole}
-                onChange={(e) => setSignerRole(e.target.value)}
-              />
+            {/* Signers List - Multiple Signers with Order */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-medium text-foreground">
+                  Signataires (par ordre de priorité)
+                </label>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={addSigner}
+                >
+                  <Plus className="w-4 h-4 mr-1" />
+                  Ajouter
+                </Button>
+              </div>
+              
+              <div className="space-y-3">
+                {signers.map((signer, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-3 rounded-lg bg-secondary/30 border border-border"
+                  >
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground">
+                        {index + 1}
+                      </div>
+                      <span className="text-xs text-muted-foreground flex-1">
+                        {index === 0 ? 'Premier signataire' : `Signataire #${index + 1}`}
+                      </span>
+                      {signers.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-sm"
+                          onClick={() => removeSigner(index)}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      )}
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Input
+                        placeholder="Nom *"
+                        value={signer.name}
+                        onChange={(e) => updateSigner(index, 'name', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="Email *"
+                        type="email"
+                        value={signer.email}
+                        onChange={(e) => updateSigner(index, 'email', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                      <Input
+                        placeholder="Rôle (ex: Directeur)"
+                        value={signer.role}
+                        onChange={(e) => updateSigner(index, 'role', e.target.value)}
+                        className="h-8 text-sm"
+                      />
+                    </div>
+                    
+                    {index < signers.length - 1 && (
+                      <div className="flex justify-center mt-2">
+                        <ArrowDown className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    )}
+                  </motion.div>
+                ))}
+              </div>
+              
+              <p className="text-xs text-muted-foreground mt-2">
+                Les signataires devront signer dans l'ordre indiqué
+              </p>
             </div>
           </div>
 
