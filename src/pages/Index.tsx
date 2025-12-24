@@ -13,10 +13,14 @@ import {
   Layers,
   Network,
   Radio,
-  Keyboard
+  Keyboard,
+  Users,
+  Crown,
+  Building
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
+import { useDemo } from '@/contexts/DemoContext';
 import { CommsCenterDrawer } from '@/components/comms-center/CommsCenterDrawer';
 import { NeuralHeartButton } from '@/components/neural-heart/NeuralHeartButton';
 import { AstedPanel } from '@/components/asted/AstedPanel';
@@ -24,8 +28,12 @@ import { CorrespondancePanel } from '@/components/correspondance/CorrespondanceP
 import { RealtimePanel } from '@/components/realtime/RealtimePanel';
 import { NetworkTopology } from '@/components/network/NetworkTopology';
 import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
+import { DemoAccountsPanel } from '@/components/demo/DemoAccountsPanel';
+import { PlatformAdminConsole } from '@/components/demo/PlatformAdminConsole';
+import { TenantAdminConsole } from '@/components/demo/TenantAdminConsole';
 import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
 const features = [
   {
@@ -67,13 +75,18 @@ const techStack = [
 
 export default function Index() {
   const { openCommsCenter, bootstrap, capabilities, isLoading } = useComms();
+  const { activeProfile, effectiveModules, isPlatformAdmin, isTenantAdmin } = useDemo();
   
   const [isCorrespondanceOpen, setIsCorrespondanceOpen] = useState(false);
   const [isRealtimeOpen, setIsRealtimeOpen] = useState(false);
   const [isTopologyOpen, setIsTopologyOpen] = useState(false);
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
+  const [isDemoAccountsOpen, setIsDemoAccountsOpen] = useState(false);
+  const [isPlatformAdminOpen, setIsPlatformAdminOpen] = useState(false);
+  const [isTenantAdminOpen, setIsTenantAdminOpen] = useState(false);
   
-  const iCorrespondanceEnabled = capabilities?.modules.icorrespondance.enabled;
+  const iCorrespondanceEnabled = effectiveModules.find(m => m.name === 'icorrespondance')?.enabled 
+    ?? capabilities?.modules.icorrespondance.enabled;
 
   // Define keyboard shortcuts
   const shortcuts: KeyboardShortcut[] = useMemo(() => [
@@ -103,6 +116,12 @@ export default function Index() {
       category: 'navigation',
     },
     {
+      key: 'a',
+      description: 'Ouvrir les comptes démo',
+      action: () => setIsDemoAccountsOpen(true),
+      category: 'navigation',
+    },
+    {
       key: 'Escape',
       description: 'Fermer le panneau actif',
       action: () => {
@@ -110,6 +129,9 @@ export default function Index() {
         setIsRealtimeOpen(false);
         setIsTopologyOpen(false);
         setIsShortcutsOpen(false);
+        setIsDemoAccountsOpen(false);
+        setIsPlatformAdminOpen(false);
+        setIsTenantAdminOpen(false);
       },
       category: 'navigation',
     },
@@ -180,6 +202,51 @@ export default function Index() {
             </div>
             
             <nav className="flex items-center gap-2">
+              {/* Demo Accounts Button */}
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsDemoAccountsOpen(true)}
+                className={cn(
+                  "border-amber-500/50",
+                  activeProfile && "bg-amber-500/10"
+                )}
+              >
+                <Users className="w-4 h-4 mr-2" />
+                Demo Accounts
+                {activeProfile && (
+                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
+                    {activeProfile.label.split(' ')[0]}
+                  </span>
+                )}
+              </Button>
+              
+              {/* Platform Admin Button */}
+              {isPlatformAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsPlatformAdminOpen(true)}
+                  className="text-amber-400 hover:text-amber-300"
+                >
+                  <Crown className="w-4 h-4 mr-2" />
+                  Platform Admin
+                </Button>
+              )}
+              
+              {/* Tenant Admin Button */}
+              {isTenantAdmin && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  onClick={() => setIsTenantAdminOpen(true)}
+                  className="text-blue-400 hover:text-blue-300"
+                >
+                  <Building className="w-4 h-4 mr-2" />
+                  Tenant Admin
+                </Button>
+              )}
+              
               <Button 
                 variant="ghost" 
                 size="icon-sm" 
@@ -208,6 +275,44 @@ export default function Index() {
               </Button>
             </nav>
           </div>
+          
+          {/* Active Profile Banner */}
+          {activeProfile && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mt-3 p-2 rounded-lg bg-primary/10 border border-primary/20 flex items-center gap-4 text-xs"
+            >
+              <span className="text-muted-foreground">Active:</span>
+              <span className="font-medium text-foreground">{activeProfile.label}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="font-mono text-primary">{activeProfile.app_id}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className="font-mono">{activeProfile.tenant_id}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded",
+                activeProfile.network_type === 'government' ? "bg-blue-500/20 text-blue-400" : "bg-amber-500/20 text-amber-400"
+              )}>
+                {activeProfile.network_type}
+              </span>
+              <span className="text-muted-foreground">•</span>
+              <span className="text-foreground">{activeProfile.realm}</span>
+              <span className="text-muted-foreground">•</span>
+              <span className={cn(
+                "px-1.5 py-0.5 rounded",
+                activeProfile.mode === 'delegated' ? "bg-purple-500/20 text-purple-400" : "bg-emerald-500/20 text-emerald-400"
+              )}>
+                {activeProfile.mode}
+              </span>
+              {activeProfile.actor_id && (
+                <>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="font-mono text-purple-400">actor: {activeProfile.actor_id}</span>
+                </>
+              )}
+            </motion.div>
+          )}
         </div>
       </header>
       
@@ -222,7 +327,7 @@ export default function Index() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-sm text-muted-foreground">
-                App-Centric Mode • {capabilities ? 'Connected' : 'Loading...'}
+                App-Centric Mode • {activeProfile ? activeProfile.label : (capabilities ? 'Connected' : 'Loading...')}
               </span>
             </div>
             
@@ -281,26 +386,39 @@ export default function Index() {
           </motion.div>
           
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="glass rounded-2xl p-6 hover:scale-[1.02] transition-transform duration-300"
-              >
-                <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4`}>
-                  <feature.icon className={`w-6 h-6 text-${feature.color}`} />
-                </div>
-                <h4 className="text-lg font-semibold text-foreground mb-2">
-                  {feature.title}
-                </h4>
-                <p className="text-sm text-muted-foreground">
-                  {feature.description}
-                </p>
-              </motion.div>
-            ))}
+            {features.map((feature, index) => {
+              const moduleStatus = effectiveModules.find(m => m.name === feature.title.toLowerCase());
+              const isEnabled = moduleStatus?.enabled ?? true;
+              
+              return (
+                <motion.div
+                  key={feature.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className={cn(
+                    "glass rounded-2xl p-6 hover:scale-[1.02] transition-transform duration-300",
+                    !isEnabled && "opacity-50"
+                  )}
+                >
+                  <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${feature.gradient} flex items-center justify-center mb-4`}>
+                    <feature.icon className={`w-6 h-6 text-${feature.color}`} />
+                  </div>
+                  <h4 className="text-lg font-semibold text-foreground mb-2 flex items-center gap-2">
+                    {feature.title}
+                    {!isEnabled && moduleStatus?.disabled_reason && (
+                      <span className="text-xs px-1.5 py-0.5 rounded bg-destructive/20 text-destructive">
+                        {moduleStatus.disabled_reason}
+                      </span>
+                    )}
+                  </h4>
+                  <p className="text-sm text-muted-foreground">
+                    {feature.description}
+                  </p>
+                </motion.div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -367,6 +485,25 @@ export default function Index() {
         isOpen={isShortcutsOpen}
         onClose={() => setIsShortcutsOpen(false)}
         shortcuts={shortcuts}
+      />
+      
+      {/* Demo Accounts Panel */}
+      <DemoAccountsPanel
+        isOpen={isDemoAccountsOpen}
+        onClose={() => setIsDemoAccountsOpen(false)}
+        onOpenComms={openCommsCenter}
+      />
+      
+      {/* Platform Admin Console */}
+      <PlatformAdminConsole
+        isOpen={isPlatformAdminOpen}
+        onClose={() => setIsPlatformAdminOpen(false)}
+      />
+      
+      {/* Tenant Admin Console */}
+      <TenantAdminConsole
+        isOpen={isTenantAdminOpen}
+        onClose={() => setIsTenantAdminOpen(false)}
       />
     </div>
   );
