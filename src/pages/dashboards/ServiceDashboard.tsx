@@ -50,8 +50,11 @@ import { BadgesPanel } from '@/components/gamification/BadgesPanel';
 import { BadgeCelebration } from '@/components/gamification/BadgeCelebration';
 import { Leaderboard } from '@/components/gamification/Leaderboard';
 import { DailyChallengesPanel } from '@/components/gamification/DailyChallengesPanel';
+import { NotificationSettings } from '@/components/gamification/NotificationSettings';
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
+import { useNotifications } from '@/hooks/useNotifications';
+import { useActionTracker } from '@/contexts/ActionTrackerContext';
 import { cn } from '@/lib/utils';
 
 // Mock data for the dashboard
@@ -147,16 +150,47 @@ export default function ServiceDashboard() {
   const { stats, badges, unlockedBadges, levelProgress, celebrationBadge, dismissCelebration, userId } = useGamification();
   const globalSearch = useGlobalSearch();
   const dailyChallenges = useDailyChallenges();
+  const notifications = useNotifications();
+  const actionTracker = useActionTracker();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showBadges, setShowBadges] = useState(false);
   const [showLeaderboard, setShowLeaderboard] = useState(false);
   const [showChallenges, setShowChallenges] = useState(false);
+  const [showNotificationSettings, setShowNotificationSettings] = useState(false);
   
   // Connect to realtime on mount
   useEffect(() => {
     connect();
     return () => disconnect();
   }, [connect, disconnect]);
+  
+  // Track daily login and check expiring challenges
+  useEffect(() => {
+    actionTracker.trackAction('daily_login');
+    
+    // Check for expiring challenges every minute
+    const interval = setInterval(() => {
+      notifications.checkExpiringChallenges(dailyChallenges.challenges);
+    }, 60000);
+    
+    // Initial check
+    notifications.checkExpiringChallenges(dailyChallenges.challenges);
+    
+    return () => clearInterval(interval);
+  }, []);
+  
+  // Check leaderboard position periodically
+  useEffect(() => {
+    if (userId) {
+      notifications.checkLeaderboardPosition(userId);
+      
+      const interval = setInterval(() => {
+        notifications.checkLeaderboardPosition(userId);
+      }, 300000); // Every 5 minutes
+      
+      return () => clearInterval(interval);
+    }
+  }, [userId, notifications]);
   
   // Keyboard shortcut for search
   useEffect(() => {
@@ -384,6 +418,19 @@ export default function ServiceDashboard() {
                   )}
                 </AnimatePresence>
               </div>
+              
+              {/* Notification Settings */}
+              <Button 
+                variant="ghost" 
+                size="icon"
+                onClick={() => setShowNotificationSettings(true)}
+                title="Paramètres notifications"
+              >
+                <Bell className={cn(
+                  "w-5 h-5",
+                  notifications.permission === 'granted' ? "text-success" : "text-muted-foreground"
+                )} />
+              </Button>
               
               <UserMenu />
             </div>
@@ -953,6 +1000,16 @@ export default function ServiceDashboard() {
       <BadgeCelebration
         badge={celebrationBadge}
         onDismiss={dismissCelebration}
+      />
+      
+      {/* Notification Settings */}
+      <NotificationSettings
+        isOpen={showNotificationSettings}
+        onClose={() => setShowNotificationSettings(false)}
+        permission={notifications.permission}
+        settings={notifications.settings}
+        onRequestPermission={notifications.requestPermission}
+        onUpdateSettings={notifications.updateSettings}
       />
       
       {/* Global Search Dialog */}
