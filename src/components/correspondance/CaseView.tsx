@@ -15,7 +15,8 @@ import {
   Eye,
   History,
   PenTool,
-  Shield
+  Shield,
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -30,6 +31,7 @@ import { DocumentUpload, UploadedFile } from './DocumentUpload';
 import { DocumentPreview, DocumentWithVersions } from './DocumentPreview';
 import { SignatureWorkflow } from './SignatureWorkflow';
 import { AuditTrail } from './AuditTrail';
+import { DocumentTemplates } from './DocumentTemplates';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -246,6 +248,7 @@ const generateMockSignatureRequests = (caseItem: Case): SignatureRequest[] => {
 export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewProps) {
   const [activeTab, setActiveTab] = useState<'details' | 'documents' | 'signatures' | 'history' | 'audit'>('details');
   const [showUpload, setShowUpload] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState<DocumentWithVersions | null>(null);
   const [signatureRequests, setSignatureRequests] = useState<SignatureRequest[]>(() => 
     generateMockSignatureRequests(caseItem)
@@ -536,6 +539,33 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
     toast.success(`${newDocuments.length} document(s) ajouté(s) au dossier`);
   }, [caseItem.id, onDocumentsAdded]);
 
+  const handleCreateFromTemplate = useCallback((doc: Omit<Document, 'id' | 'case_id' | 'created_at'>) => {
+    const newDocument: Document = {
+      ...doc,
+      id: `doc-template-${Date.now()}`,
+      case_id: caseItem.id,
+      created_at: new Date().toISOString(),
+    };
+    
+    onDocumentsAdded?.(caseItem.id, [newDocument]);
+    setShowTemplates(false);
+    
+    // Add audit entry
+    setAuditLog(prev => [{
+      id: `audit-${Date.now()}`,
+      case_id: caseItem.id,
+      action: 'document_created',
+      actor_id: 'current-user',
+      actor_name: 'Utilisateur courant',
+      actor_role: 'Agent',
+      details: `Document "${newDocument.name}" créé à partir d'un modèle`,
+      ip_address: '192.168.1.100',
+      timestamp: new Date().toISOString(),
+    }, ...prev]);
+    
+    toast.success(`Document "${newDocument.name}" créé avec succès`);
+  }, [caseItem.id, onDocumentsAdded]);
+
   const handleDocumentClick = useCallback((doc: Document) => {
     setSelectedDocument(getDocumentVersions(doc));
   }, []);
@@ -722,17 +752,26 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
                 </motion.div>
               ) : (
                 <motion.div
-                  key="button"
+                  key="buttons"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
+                  className="flex gap-2"
                 >
                   <Button 
                     variant="outline" 
-                    className="w-full"
+                    className="flex-1"
                     onClick={() => setShowUpload(true)}
                   >
                     <Plus className="w-4 h-4 mr-2" />
-                    Ajouter des documents
+                    Importer
+                  </Button>
+                  <Button 
+                    variant="default" 
+                    className="flex-1"
+                    onClick={() => setShowTemplates(true)}
+                  >
+                    <Sparkles className="w-4 h-4 mr-2" />
+                    Modèles
                   </Button>
                 </motion.div>
               )}
@@ -923,6 +962,13 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
         document={selectedDocument!}
         isOpen={!!selectedDocument}
         onClose={() => setSelectedDocument(null)}
+      />
+      
+      {/* Document Templates Modal */}
+      <DocumentTemplates
+        isOpen={showTemplates}
+        onClose={() => setShowTemplates(false)}
+        onCreateDocument={handleCreateFromTemplate}
       />
     </div>
   );
