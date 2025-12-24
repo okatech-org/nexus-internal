@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
-  ArrowLeft, 
   Server, 
   MessageCircle, 
   Inbox, 
@@ -37,19 +36,22 @@ import {
   BarChart3,
   Gift,
   Sparkles,
-  UsersRound
+  UsersRound,
+  Menu
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { SidebarProvider, SidebarTrigger, SidebarInset } from '@/components/ui/sidebar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useComms } from '@/contexts/CommsContext';
 import { useRealtime } from '@/hooks/useRealtime';
 import { useGamification } from '@/hooks/useGamification';
 import { useGlobalSearch } from '@/hooks/useGlobalSearch';
 import { UserMenu } from '@/components/layout/UserMenu';
+import { ServiceSidebar } from '@/components/layout/ServiceSidebar';
 import { BadgesPanel } from '@/components/gamification/BadgesPanel';
 import { BadgeCelebration } from '@/components/gamification/BadgeCelebration';
 import { Leaderboard } from '@/components/gamification/Leaderboard';
@@ -284,34 +286,94 @@ export default function ServiceDashboard() {
   const isStartupProfile = appProfile === 'startup-chat';
   const isChatFocused = isStartupProfile || appProfile === 'citizen-chat-contact';
   
+  // Handle sidebar panel actions
+  const handlePanelOpen = (panel: string) => {
+    switch (panel) {
+      case 'chat':
+      case 'call':
+      case 'meeting':
+      case 'contact':
+      case 'iboite':
+        openCommsCenter();
+        break;
+      case 'iasted':
+        openCommsCenter();
+        break;
+      case 'icorrespondance':
+        openCommsCenter();
+        break;
+      case 'challenges':
+        setShowChallenges(true);
+        break;
+      case 'weekly-rewards':
+        setShowWeeklyRewards(true);
+        break;
+      case 'monthly-quests':
+        setShowMonthlyQuests(true);
+        break;
+      case 'badges':
+        setShowBadges(true);
+        break;
+      case 'leaderboard':
+        setShowLeaderboard(true);
+        break;
+      case 'team':
+        setShowTeamPerformance(true);
+        break;
+      case 'stats':
+        setShowStats(true);
+        break;
+      case 'notifications':
+        setShowNotificationSettings(true);
+        break;
+    }
+  };
+  
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link to="/demo-accounts">
-                <Button variant="ghost" size="icon">
-                  <ArrowLeft className="w-5 h-5" />
-                </Button>
-              </Link>
-              <div className="flex items-center gap-3">
-                <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", profileConfig.bgColor)}>
-                  <ProfileIcon className={cn("w-5 h-5", profileConfig.color)} />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold text-foreground">{profileConfig.name}</h1>
-                  <div className="flex items-center gap-2">
-                    <p className="text-xs text-muted-foreground font-mono">{payload?.app_id || 'client-portal'}</p>
-                    <span className={cn(
-                      "w-2 h-2 rounded-full",
-                      isConnected ? "bg-green-500" : "bg-muted"
-                    )} />
+    <SidebarProvider>
+      <div className="min-h-screen flex w-full bg-background">
+        {/* Sidebar */}
+        <ServiceSidebar
+          mode="service"
+          onOpenPanel={handlePanelOpen}
+          unreadCounts={{
+            chat: dashboardStats.unreadMessages,
+            calls: dashboardStats.missedCalls,
+            meetings: dashboardStats.upcomingMeetings,
+            inbox: dashboardStats.pendingThreads,
+          }}
+          gamificationStats={{
+            level: stats.level,
+            streak: weeklyRewards.challengeStreak,
+            claimableQuests: monthlyQuests.claimableCount,
+            pendingChallenges: dailyChallenges.totalChallenges - dailyChallenges.completedCount,
+          }}
+        />
+        
+        {/* Main Content */}
+        <SidebarInset className="flex-1">
+          {/* Header */}
+          <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
+            <div className="px-6 py-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <SidebarTrigger className="-ml-1" />
+                  <div className="flex items-center gap-3">
+                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", profileConfig.bgColor)}>
+                      <ProfileIcon className={cn("w-5 h-5", profileConfig.color)} />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-bold text-foreground">{profileConfig.name}</h1>
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground font-mono">{payload?.app_id || 'client-portal'}</p>
+                        <span className={cn(
+                          "w-2 h-2 rounded-full",
+                          isConnected ? "bg-green-500" : "bg-muted"
+                        )} />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
             
             <div className="flex items-center gap-4">
               <Button 
@@ -506,7 +568,7 @@ export default function ServiceDashboard() {
         </div>
       </header>
       
-      <main className="container mx-auto px-6 py-8">
+      <main className="px-6 py-8">
         {/* Status & Quick Stats - Adapted for Biz profile */}
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -1132,6 +1194,8 @@ export default function ServiceDashboard() {
           openCommsCenter();
         }}
       />
+    </SidebarInset>
     </div>
+    </SidebarProvider>
   );
 }
