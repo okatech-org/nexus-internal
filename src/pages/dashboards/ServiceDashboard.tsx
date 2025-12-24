@@ -1,31 +1,18 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, Server, MessageCircle, Inbox, Brain, FileText,
-  Users, Shield, LogOut, ChevronDown, Radio
+  ArrowLeft, Server, MessageCircle, Inbox, Brain, FileText, Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useComms } from '@/contexts/CommsContext';
+import { UserMenu } from '@/components/layout/UserMenu';
 import { cn } from '@/lib/utils';
 
 export default function ServiceDashboard() {
-  const navigate = useNavigate();
-  const { payload, logout, hasScope } = useAuth();
-  const { openCommsCenter, capabilities } = useComms();
-  
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
+  const { payload, hasScope } = useAuth();
+  const { openCommsCenter } = useComms();
   
   const modules = [
     { 
@@ -85,32 +72,7 @@ export default function ServiceDashboard() {
               </div>
             </div>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" className="gap-2">
-                  <Shield className="w-4 h-4" />
-                  {payload?.app_id}
-                  <ChevronDown className="w-4 h-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  Mode: Service Account
-                </div>
-                <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                  Network: {payload?.network_type}
-                </div>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/demo-accounts')}>
-                  <Users className="w-4 h-4 mr-2" />
-                  Changer de compte
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Déconnexion
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+            <UserMenu />
           </div>
         </div>
       </header>

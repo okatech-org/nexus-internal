@@ -1,31 +1,18 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
-  ArrowLeft, User, MessageCircle, Inbox, Brain, FileText,
-  Users, Shield, LogOut, ChevronDown, Radio, Bell
+  ArrowLeft, User, MessageCircle, Inbox, Brain, FileText, Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { 
-  DropdownMenu, 
-  DropdownMenuContent, 
-  DropdownMenuItem, 
-  DropdownMenuSeparator,
-  DropdownMenuTrigger 
-} from '@/components/ui/dropdown-menu';
 import { useAuth } from '@/contexts/AuthContext';
 import { useComms } from '@/contexts/CommsContext';
+import { UserMenu } from '@/components/layout/UserMenu';
 import { cn } from '@/lib/utils';
 
 export default function DelegatedDashboard() {
-  const navigate = useNavigate();
-  const { payload, logout, hasScope } = useAuth();
+  const { payload, hasScope } = useAuth();
   const { openCommsCenter } = useComms();
-  
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-  };
   
   const modules = [
     { 
@@ -95,32 +82,7 @@ export default function DelegatedDashboard() {
                 <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
               </Button>
               
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" className="gap-2">
-                    <User className="w-4 h-4" />
-                    Mon compte
-                    <ChevronDown className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    {payload?.actor_id}
-                  </div>
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
-                    via {payload?.app_id}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={() => navigate('/demo-accounts')}>
-                    <Users className="w-4 h-4 mr-2" />
-                    Changer de compte
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleLogout} className="text-destructive">
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Déconnexion
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+              <UserMenu />
             </div>
           </div>
         </div>
