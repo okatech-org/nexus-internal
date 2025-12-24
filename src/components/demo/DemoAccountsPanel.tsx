@@ -15,7 +15,8 @@ import {
   UserCheck,
   Plus,
   Trash2,
-  RotateCcw
+  RotateCcw,
+  PlayCircle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -26,6 +27,7 @@ import { DemoAccount, DemoAccountMode } from '@/types/demo-accounts';
 import { ModuleName, NetworkType, Realm } from '@/types/comms';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { DemoWalkthrough } from './DemoWalkthrough';
 
 interface DemoAccountsPanelProps {
   isOpen: boolean;
@@ -86,6 +88,7 @@ export function DemoAccountsPanel({ isOpen, onClose, onOpenComms }: DemoAccounts
   
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [showWalkthrough, setShowWalkthrough] = useState(false);
   const [formState, setFormState] = useState(defaultFormState);
   
   const handleSelect = (account: DemoAccount) => {
@@ -419,15 +422,32 @@ export function DemoAccountsPanel({ isOpen, onClose, onOpenComms }: DemoAccounts
                     exit={{ opacity: 0, x: 20 }}
                     className="p-4 space-y-2"
                   >
-                    {/* Create Button */}
-                    <Button 
-                      variant="outline" 
-                      className="w-full mb-3"
-                      onClick={() => setShowCreateForm(true)}
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Create Custom Profile
-                    </Button>
+                    {/* Action Buttons */}
+                    <div className="flex gap-2 mb-3">
+                      <Button 
+                        variant="outline" 
+                        className="flex-1"
+                        onClick={() => setShowCreateForm(true)}
+                      >
+                        <Plus className="w-4 h-4 mr-2" />
+                        Create Profile
+                      </Button>
+                      <Button 
+                        variant="default" 
+                        className="flex-1"
+                        onClick={() => setShowWalkthrough(true)}
+                      >
+                        <PlayCircle className="w-4 h-4 mr-2" />
+                        Walkthrough
+                      </Button>
+                    </div>
+                    
+                    {/* Walkthrough Card */}
+                    {showWalkthrough && (
+                      <div className="mb-4">
+                        <DemoWalkthrough onClose={() => setShowWalkthrough(false)} />
+                      </div>
+                    )}
                     
                     {/* Custom Profiles Section */}
                     {customProfiles.length > 0 && (
