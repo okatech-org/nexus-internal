@@ -23,7 +23,9 @@ import {
   RefreshCw,
   ArrowLeft,
   ExternalLink,
-  Layers
+  Layers,
+  Trash2,
+  AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,6 +34,18 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
 import { useDemo } from '@/contexts/DemoContext';
 import { AdminLayout } from '@/components/layout/AdminLayout';
@@ -355,6 +369,9 @@ function ApplicationDetail() {
   const [app, setApp] = useState<Application | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleteType, setDeleteType] = useState<'soft' | 'hard'>('soft');
+  const [deleting, setDeleting] = useState(false);
   
   // Editable form state
   const [formData, setFormData] = useState({
@@ -455,6 +472,41 @@ function ApplicationDetail() {
         status: app.status,
         network_type: app.network_type
       });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!app) return;
+
+    setDeleting(true);
+    try {
+      if (deleteType === 'soft') {
+        // Soft delete - just change status to 'deleted'
+        const { error } = await supabase
+          .from('applications')
+          .update({ status: 'deleted' })
+          .eq('id', app.id);
+
+        if (error) throw error;
+        toast.success('Application archivée avec succès');
+      } else {
+        // Hard delete - actually remove from database
+        const { error } = await supabase
+          .from('applications')
+          .delete()
+          .eq('id', app.id);
+
+        if (error) throw error;
+        toast.success('Application supprimée définitivement');
+      }
+
+      setShowDeleteDialog(false);
+      navigate('/admin/tenant/apps');
+    } catch (error) {
+      console.error('Error deleting application:', error);
+      toast.error('Erreur lors de la suppression');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -625,6 +677,95 @@ function ApplicationDetail() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Danger Zone */}
+      <Card className="bg-card/50 border-destructive/30">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2 text-destructive">
+            <AlertTriangle className="w-5 h-5" />
+            Zone de danger
+          </CardTitle>
+          <CardDescription>
+            Actions irréversibles - procédez avec prudence
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="font-medium">Supprimer l'application</p>
+              <p className="text-sm text-muted-foreground">
+                Cette action archivera ou supprimera définitivement l'application
+              </p>
+            </div>
+            <Button 
+              variant="destructive" 
+              onClick={() => setShowDeleteDialog(true)}
+              className="gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              Supprimer
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              Supprimer l'application
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-4">
+                <p>
+                  Vous êtes sur le point de supprimer l'application <strong>{app.name}</strong>.
+                </p>
+                
+                <RadioGroup 
+                  value={deleteType} 
+                  onValueChange={(value) => setDeleteType(value as 'soft' | 'hard')}
+                  className="space-y-3"
+                >
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-border/50 hover:border-border transition-colors">
+                    <RadioGroupItem value="soft" id="soft-delete" className="mt-1" />
+                    <Label htmlFor="soft-delete" className="cursor-pointer flex-1">
+                      <span className="font-medium">Archiver (soft delete)</span>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        L'application sera marquée comme supprimée mais les données seront conservées. 
+                        Vous pourrez la restaurer ultérieurement.
+                      </p>
+                    </Label>
+                  </div>
+                  
+                  <div className="flex items-start space-x-3 p-3 rounded-lg border border-destructive/30 hover:border-destructive/50 transition-colors">
+                    <RadioGroupItem value="hard" id="hard-delete" className="mt-1" />
+                    <Label htmlFor="hard-delete" className="cursor-pointer flex-1">
+                      <span className="font-medium text-destructive">Supprimer définitivement (hard delete)</span>
+                      <p className="text-sm text-muted-foreground mt-1">
+                        L'application et toutes ses données seront supprimées de façon permanente. 
+                        Cette action est irréversible.
+                      </p>
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Annuler</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              disabled={deleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleting && <RefreshCw className="w-4 h-4 mr-2 animate-spin" />}
+              {deleteType === 'soft' ? 'Archiver' : 'Supprimer définitivement'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </motion.div>
   );
 }
