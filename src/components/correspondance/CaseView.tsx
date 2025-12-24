@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   FileText, 
@@ -73,6 +73,55 @@ const sendSignatureNotification = async (
     console.error('Error sending notification:', err);
     return false;
   }
+};
+
+// Send signature reminder email
+const sendSignatureReminder = async (
+  signer: SignerInfo,
+  documentNames: string[],
+  caseReference: string,
+  caseTitle: string,
+  expiresAt: string,
+  daysRemaining: number
+) => {
+  try {
+    const { data, error } = await supabase.functions.invoke('send-signature-reminder', {
+      body: {
+        signerName: signer.signer_name,
+        signerEmail: signer.signer_email,
+        signerRole: signer.signer_role,
+        documentNames,
+        caseReference,
+        caseTitle,
+        expiresAt,
+        daysRemaining,
+      },
+    });
+    
+    if (error) {
+      console.error('Failed to send reminder:', error);
+      return false;
+    }
+    
+    console.log('Reminder sent:', data);
+    return true;
+  } catch (err) {
+    console.error('Error sending reminder:', err);
+    return false;
+  }
+};
+
+// Calculate days remaining until expiration
+const getDaysRemaining = (expiresAt: string): number => {
+  const now = new Date();
+  const expiry = new Date(expiresAt);
+  const diffTime = expiry.getTime() - now.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+};
+
+// Check if reminder should be sent (3 days, 1 day, or same day)
+const shouldSendReminder = (daysRemaining: number): boolean => {
+  return daysRemaining === 3 || daysRemaining === 1 || daysRemaining === 0;
 };
 
 interface CaseViewProps {
@@ -204,8 +253,98 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
   const [auditLog, setAuditLog] = useState<AuditLogEntry[]>(() => 
     generateMockAuditLog(caseItem)
   );
+  const [remindersSent, setRemindersSent] = useState<Set<string>>(new Set());
   
   const currentStepIdx = stepIndex(caseItem.current_step);
+
+  // Check for expiring signatures and send reminders
+  useEffect(() => {
+    const checkExpiringSignatures = async () => {
+      for (const request of signatureRequests) {
+        if (request.status !== 'active') continue;
+        
+        const daysRemaining = getDaysRemaining(request.expires_at);
+        
+        // Only send reminders at specific intervals (3 days, 1 day, same day)
+        if (!shouldSendReminder(daysRemaining)) continue;
+        
+        // Find the current pending signer
+        const sortedSigners = [...request.signers].sort((a, b) => a.order - b.order);
+        const pendingSigner = sortedSigners.find(s => s.status === 'pending');
+        
+        if (!pendingSigner) continue;
+        
+        // Create unique key to track sent reminders
+        const reminderKey = `${request.id}-${pendingSigner.id}-${daysRemaining}`;
+        if (remindersSent.has(reminderKey)) continue;
+        
+        const docNames = caseItem.documents
+          .filter(d => request.document_ids.includes(d.id))
+          .map(d => d.name);
+        
+        const success = await sendSignatureReminder(
+          pendingSigner,
+          docNames,
+          caseItem.reference,
+          caseItem.title,
+          request.expires_at,
+          daysRemaining
+        );
+        
+        if (success) {
+          setRemindersSent(prev => new Set([...prev, reminderKey]));
+          toast.info(`Rappel envoyé à ${pendingSigner.signer_name} (${daysRemaining} jour(s) restants)`);
+        }
+      }
+    };
+    
+    checkExpiringSignatures();
+  }, [signatureRequests, caseItem.documents, caseItem.reference, caseItem.title, remindersSent]);
+
+  // Manual reminder function
+  const handleSendReminder = useCallback(async (request: SignatureRequest) => {
+    const sortedSigners = [...request.signers].sort((a, b) => a.order - b.order);
+    const pendingSigner = sortedSigners.find(s => s.status === 'pending');
+    
+    if (!pendingSigner) {
+      toast.error('Aucun signataire en attente');
+      return;
+    }
+    
+    const docNames = caseItem.documents
+      .filter(d => request.document_ids.includes(d.id))
+      .map(d => d.name);
+    
+    const daysRemaining = getDaysRemaining(request.expires_at);
+    
+    const success = await sendSignatureReminder(
+      pendingSigner,
+      docNames,
+      caseItem.reference,
+      caseItem.title,
+      request.expires_at,
+      daysRemaining
+    );
+    
+    if (success) {
+      toast.success(`Rappel envoyé à ${pendingSigner.signer_name}`);
+      
+      // Add audit entry
+      setAuditLog(prev => [{
+        id: `audit-${Date.now()}`,
+        case_id: caseItem.id,
+        action: 'signature_requested',
+        actor_id: 'current-user',
+        actor_name: 'Utilisateur courant',
+        actor_role: 'Agent',
+        details: `Rappel de signature envoyé à ${pendingSigner.signer_name}`,
+        ip_address: '192.168.1.100',
+        timestamp: new Date().toISOString(),
+      }, ...prev]);
+    } else {
+      toast.error('Échec de l\'envoi du rappel');
+    }
+  }, [caseItem.documents, caseItem.reference, caseItem.title, caseItem.id]);
   
   // Signature handlers
   const handleRequestSignature = useCallback((
@@ -732,6 +871,7 @@ export function CaseView({ caseItem, onTransition, onDocumentsAdded }: CaseViewP
             onRequestSignature={handleRequestSignature}
             onSign={handleSign}
             onDecline={handleDecline}
+            onSendReminder={handleSendReminder}
           />
         )}
 

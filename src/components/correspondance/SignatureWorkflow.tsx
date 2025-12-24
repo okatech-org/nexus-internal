@@ -14,7 +14,8 @@ import {
   ArrowDown,
   Plus,
   Trash2,
-  GripVertical
+  GripVertical,
+  Bell
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { 
@@ -48,6 +49,7 @@ interface SignatureWorkflowProps {
   onRequestSignature: (documentIds: string[], signers: Omit<SignerInfo, 'id' | 'status' | 'signed_at'>[]) => void;
   onSign: (requestId: string) => void;
   onDecline: (requestId: string, reason: string) => void;
+  onSendReminder?: (request: SignatureRequest) => void;
 }
 
 const statusConfig = {
@@ -93,6 +95,7 @@ export function SignatureWorkflow({
   onRequestSignature,
   onSign,
   onDecline,
+  onSendReminder,
 }: SignatureWorkflowProps) {
   const [showRequestDialog, setShowRequestDialog] = useState(false);
   const [showSignDialog, setShowSignDialog] = useState(false);
@@ -374,6 +377,21 @@ export function SignatureWorkflow({
                     );
                   })}
                 </div>
+
+                {/* Send Reminder Button */}
+                {request.status === 'active' && onSendReminder && (
+                  <div className="mt-3 pt-3 border-t border-border">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onSendReminder(request)}
+                      className="w-full"
+                    >
+                      <Bell className="w-4 h-4 mr-2" />
+                      Envoyer un rappel
+                    </Button>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>
