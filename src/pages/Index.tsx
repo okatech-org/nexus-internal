@@ -1,22 +1,27 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   MessageCircle, 
-  Mail, 
+  Inbox, 
   Brain, 
   FileText, 
   Zap, 
   Shield, 
   Code2,
   ArrowRight,
-  Layers
+  Layers,
+  Network,
+  Radio
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useComms } from '@/contexts/CommsContext';
 import { CommsCenterDrawer } from '@/components/comms-center/CommsCenterDrawer';
 import { NeuralHeartButton } from '@/components/neural-heart/NeuralHeartButton';
 import { AstedPanel } from '@/components/asted/AstedPanel';
+import { CorrespondancePanel } from '@/components/correspondance/CorrespondancePanel';
+import { RealtimePanel } from '@/components/realtime/RealtimePanel';
+import { NetworkTopology } from '@/components/network/NetworkTopology';
 
 const features = [
   {
@@ -27,9 +32,9 @@ const features = [
     gradient: 'from-emerald-500/20 to-teal-500/20',
   },
   {
-    icon: Mail,
+    icon: Inbox,
     title: 'iBoîte',
-    description: 'Messagerie structurée avec threads et traçabilité',
+    description: 'Inbox interne avec threads et traçabilité complète',
     color: 'iboite',
     gradient: 'from-amber-500/20 to-orange-500/20',
   },
@@ -59,6 +64,12 @@ const techStack = [
 export default function Index() {
   const { openCommsCenter, bootstrap, capabilities, isLoading } = useComms();
   
+  const [isCorrespondanceOpen, setIsCorrespondanceOpen] = useState(false);
+  const [isRealtimeOpen, setIsRealtimeOpen] = useState(false);
+  const [isTopologyOpen, setIsTopologyOpen] = useState(false);
+  
+  const iCorrespondanceEnabled = capabilities?.modules.icorrespondance.enabled;
+  
   useEffect(() => {
     bootstrap();
   }, [bootstrap]);
@@ -85,7 +96,15 @@ export default function Index() {
               </div>
             </div>
             
-            <nav className="flex items-center gap-4">
+            <nav className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setIsTopologyOpen(true)}>
+                <Network className="w-4 h-4 mr-2" />
+                Topology
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => setIsRealtimeOpen(true)}>
+                <Radio className="w-4 h-4 mr-2" />
+                Realtime
+              </Button>
               <Link to="/debug">
                 <Button variant="ghost" size="sm">
                   <Code2 className="w-4 h-4 mr-2" />
@@ -94,7 +113,7 @@ export default function Index() {
               </Link>
               <Button variant="outline" onClick={openCommsCenter}>
                 <MessageCircle className="w-4 h-4 mr-2" />
-                Open Comms Center
+                Comms Center
               </Button>
             </nav>
           </div>
@@ -112,7 +131,7 @@ export default function Index() {
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass mb-8">
               <div className="w-2 h-2 rounded-full bg-success animate-pulse" />
               <span className="text-sm text-muted-foreground">
-                Dev Mode Active • {capabilities ? 'Connected' : 'Loading...'}
+                App-Centric Mode • {capabilities ? 'Connected' : 'Loading...'}
               </span>
             </div>
             
@@ -123,8 +142,8 @@ export default function Index() {
             </h2>
             
             <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto mb-10">
-              NDJOBI est un réseau de communication modulaire et sécurisé. 
-              Aucun email externe, tout reste en interne avec une traçabilité complète.
+              NDJOBI est un réseau de communication modulaire et sécurisé pour applications. 
+              Aucun email externe, tout reste interne avec traçabilité complète.
             </p>
             
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -138,12 +157,16 @@ export default function Index() {
                 <ArrowRight className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
               
-              <Link to="/debug">
-                <Button variant="glass" size="xl">
-                  <Code2 className="w-5 h-5 mr-2" />
-                  Voir les Capabilities
+              {iCorrespondanceEnabled && (
+                <Button
+                  variant="glass"
+                  size="xl"
+                  onClick={() => setIsCorrespondanceOpen(true)}
+                >
+                  <FileText className="w-5 h-5 mr-2" />
+                  iCorrespondance
                 </Button>
-              </Link>
+              )}
             </div>
           </motion.div>
         </div>
@@ -229,6 +252,24 @@ export default function Index() {
       
       {/* iAsted Panel */}
       <AstedPanel />
+      
+      {/* iCorrespondance Panel */}
+      <CorrespondancePanel 
+        isOpen={isCorrespondanceOpen} 
+        onClose={() => setIsCorrespondanceOpen(false)} 
+      />
+      
+      {/* Realtime Panel */}
+      <RealtimePanel 
+        isOpen={isRealtimeOpen} 
+        onClose={() => setIsRealtimeOpen(false)} 
+      />
+      
+      {/* Network Topology */}
+      <NetworkTopology
+        isOpen={isTopologyOpen}
+        onClose={() => setIsTopologyOpen(false)}
+      />
     </div>
   );
 }
