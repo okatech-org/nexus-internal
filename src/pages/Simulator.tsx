@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
   Layers, 
@@ -29,6 +30,7 @@ import { toast } from 'sonner';
 import { DemoAccount, EffectiveModule } from '@/types/demo-accounts';
 import { ModuleName } from '@/types/comms';
 import demoAccountsData from '@/mocks/demo-accounts.mock.json';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import {
   PlatformEvent,
   PlatformMessage,
@@ -641,12 +643,14 @@ function getPolicyRule(sourceRealm: string, targetRealm: string, networkType: st
 }
 
 function PoliciesMatrix() {
+  const { t } = useTranslation();
+  
   return (
     <Card className="shrink-0">
       <CardHeader className="py-3">
         <div className="flex items-center gap-2">
           <Grid3X3 className="w-4 h-4 text-primary" />
-          <CardTitle className="text-sm">Realm Communication Policies</CardTitle>
+          <CardTitle className="text-sm">{t('policies.title')}</CardTitle>
         </div>
       </CardHeader>
       <CardContent className="pt-0">
@@ -659,17 +663,17 @@ function PoliciesMatrix() {
                   ? "bg-blue-500/20 text-blue-400" 
                   : "bg-amber-500/20 text-amber-400"
               )}>
-                {networkType.charAt(0).toUpperCase() + networkType.slice(1)} Network
+                {t(`policies.${networkType}Network`)}
               </div>
               
               <div className="text-[10px]">
                 <table className="w-full border-collapse">
                   <thead>
                     <tr>
-                      <th className="p-1 text-left text-muted-foreground">From \ To</th>
+                      <th className="p-1 text-left text-muted-foreground">{t('policies.fromTo')}</th>
                       {REALMS.map(realm => (
                         <th key={realm} className="p-1 text-center text-muted-foreground">
-                          {realm.slice(0, 3)}
+                          {t(`policies.${realm.slice(0, 3)}`)}
                         </th>
                       ))}
                     </tr>
@@ -677,7 +681,7 @@ function PoliciesMatrix() {
                   <tbody>
                     {REALMS.map(sourceRealm => (
                       <tr key={sourceRealm}>
-                        <td className="p-1 font-medium">{sourceRealm.slice(0, 3)}</td>
+                        <td className="p-1 font-medium">{t(`policies.${sourceRealm.slice(0, 3)}`)}</td>
                         {REALMS.map(targetRealm => {
                           const rule = getPolicyRule(sourceRealm, targetRealm, networkType);
                           return (
@@ -712,15 +716,15 @@ function PoliciesMatrix() {
         <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-3 text-[10px] text-muted-foreground">
           <div className="flex items-center gap-1">
             <Check className="w-3 h-3 text-emerald-400" />
-            <span>Allowed (hover for modules)</span>
+            <span>{t('policies.allowed')}</span>
           </div>
           <div className="flex items-center gap-1">
             <X className="w-3 h-3 text-destructive" />
-            <span>Not allowed</span>
+            <span>{t('policies.notAllowed')}</span>
           </div>
           <div className="flex items-center gap-1">
             <AlertTriangle className="w-3 h-3 text-amber-400" />
-            <span>iCorr = Government only</span>
+            <span>{t('policies.icorrGovOnly')}</span>
           </div>
         </div>
       </CardContent>
@@ -729,6 +733,7 @@ function PoliciesMatrix() {
 }
 
 export default function Simulator() {
+  const { t } = useTranslation();
   const [app1Profile, setApp1Profile] = useState<DemoAccount | null>(null);
   const [app2Profile, setApp2Profile] = useState<DemoAccount | null>(null);
   const [showPolicies, setShowPolicies] = useState(false);
@@ -738,17 +743,16 @@ export default function Simulator() {
     if (govProfiles.length >= 2) {
       setApp1Profile(govProfiles[0]);
       setApp2Profile(govProfiles[1]);
-      toast.success(`Both apps set to ${networkType} network`);
+      toast.success(t('simulator.bothToGov'));
     } else if (govProfiles.length === 1) {
       setApp1Profile(govProfiles[0]);
       setApp2Profile(govProfiles[0]);
-      toast.info(`Only one ${networkType} profile available`);
     }
   };
   
   const handleResetData = () => {
     resetStore();
-    toast.success('Platform data reset');
+    toast.success(t('simulator.platformDataReset'));
   };
   
   return (
@@ -767,19 +771,20 @@ export default function Simulator() {
                 <Layers className="w-5 h-5 text-foreground" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-foreground">Multi-App Simulator</h1>
-                <p className="text-xs text-muted-foreground">Side-by-side app communication</p>
+                <h1 className="text-xl font-bold text-foreground">{t('simulator.title')}</h1>
+                <p className="text-xs text-muted-foreground">{t('simulator.subtitle')}</p>
               </div>
             </div>
             
             <div className="flex items-center gap-2">
+              <LanguageSwitcher />
               <Button 
                 variant={showPolicies ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => setShowPolicies(!showPolicies)}
               >
                 <Grid3X3 className="w-4 h-4 mr-2" />
-                Policies
+                {t('simulator.policies')}
               </Button>
               <Button 
                 variant="outline" 
@@ -787,7 +792,7 @@ export default function Simulator() {
                 onClick={() => handleSetBothToNetwork('government')}
               >
                 <Network className="w-4 h-4 mr-2" />
-                Both to Gov
+                {t('simulator.bothToGov')}
               </Button>
               <Button 
                 variant="outline" 
@@ -795,7 +800,7 @@ export default function Simulator() {
                 onClick={() => handleSetBothToNetwork('commercial')}
               >
                 <Network className="w-4 h-4 mr-2" />
-                Both to Commercial
+                {t('simulator.bothToCommercial')}
               </Button>
               <Button 
                 variant="destructive" 
@@ -803,7 +808,7 @@ export default function Simulator() {
                 onClick={handleResetData}
               >
                 <RefreshCcw className="w-4 h-4 mr-2" />
-                Reset
+                {t('simulator.resetData')}
               </Button>
             </div>
           </div>
@@ -821,7 +826,7 @@ export default function Simulator() {
       <main className="flex-1 container mx-auto px-6 py-6 flex gap-6 overflow-hidden">
         <AppPanel
           panelId="app1"
-          title="Client App #1"
+          title={t('simulator.clientApp1')}
           profile={app1Profile}
           onProfileChange={(id) => setApp1Profile(demoAccounts.find(a => a.id === id) || null)}
           otherProfile={app2Profile}
@@ -829,7 +834,7 @@ export default function Simulator() {
         
         <AppPanel
           panelId="app2"
-          title="Client App #2"
+          title={t('simulator.clientApp2')}
           profile={app2Profile}
           onProfileChange={(id) => setApp2Profile(demoAccounts.find(a => a.id === id) || null)}
           otherProfile={app1Profile}

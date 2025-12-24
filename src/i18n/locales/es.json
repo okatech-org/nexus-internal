@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Cargando...",
+    "error": "Error",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "delete": "Eliminar",
+    "create": "Crear",
+    "edit": "Editar",
+    "close": "Cerrar",
+    "open": "Abrir",
+    "send": "Enviar",
+    "reset": "Reiniciar",
+    "search": "Buscar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "previous": "Anterior",
+    "yes": "Sí",
+    "no": "No",
+    "enabled": "Habilitado",
+    "disabled": "Deshabilitado"
+  },
+  "nav": {
+    "home": "Inicio",
+    "debug": "Depurar",
+    "simulator": "Simulador"
+  },
+  "quickDemo": {
+    "title": "Demo rápida",
+    "platformAdmin": "Admin Plataforma",
+    "govService": "Servicio Gov",
+    "bizService": "Servicio Biz",
+    "citizen": "Ciudadano",
+    "govAgent": "Agente Gov",
+    "openComms": "Centro Comms",
+    "openAsted": "iAsted"
+  },
+  "modules": {
+    "icom": "iCom",
+    "iboite": "iBoîte",
+    "iasted": "iAsted",
+    "icorrespondance": "iCorrespondance"
+  },
+  "simulator": {
+    "title": "Simulador Multi-App",
+    "subtitle": "Comunicación de aplicaciones lado a lado",
+    "clientApp1": "App Cliente #1",
+    "clientApp2": "App Cliente #2",
+    "selectProfile": "Seleccionar perfil",
+    "bothToGov": "Ambos a Gov",
+    "bothToCommercial": "Ambos a Comercial",
+    "resetData": "Reiniciar",
+    "policies": "Políticas",
+    "conversations": "Conversaciones",
+    "threads": "Hilos",
+    "noConversations": "Sin conversaciones. Haz clic en + para iniciar una.",
+    "noThreads": "Sin hilos. Ingresa un asunto y haz clic en + para iniciar uno.",
+    "noMessages": "Sin mensajes aún",
+    "typeMessage": "Escribe un mensaje...",
+    "replyToThread": "Responder al hilo...",
+    "newThreadSubject": "Nuevo asunto del hilo...",
+    "createConversation": "Crear conversación con otra app",
+    "createThread": "Crear hilo con otra app",
+    "needBothApps": "Ambas apps deben estar configuradas en la misma red",
+    "sameNetworkRequired": "Las apps deben estar en el mismo tenant y red",
+    "conversationCreated": "Conversación creada",
+    "threadCreated": "Hilo creado",
+    "enterSubject": "Por favor ingresa un asunto",
+    "platformDataReset": "Datos de plataforma reiniciados",
+    "icomDisabled": "iCom deshabilitado para este perfil",
+    "iboiteDisabled": "iBoîte deshabilitado para este perfil",
+    "iastedSimulation": "Simulación iAsted próximamente",
+    "icorrGovOnly": "iCorrespondance (Solo Gobierno)"
+  },
+  "policies": {
+    "title": "Políticas de comunicación entre dominios",
+    "governmentNetwork": "Red Gubernamental",
+    "commercialNetwork": "Red Comercial",
+    "fromTo": "De \\ A",
+    "gov": "gov",
+    "biz": "biz",
+    "cit": "cit",
+    "pla": "pla",
+    "allowed": "Permitido (pasar mouse para módulos)",
+    "notAllowed": "No permitido",
+    "icorrGovOnly": "iCorr = Solo Gobierno",
+    "noIcorrCommercial": "Sin iCorr en comercial",
+    "customerService": "Servicio al cliente",
+    "publicServices": "Servicios públicos",
+    "p2pMessaging": "Solo mensajería P2P",
+    "p2pNotAllowed": "P2P no permitido",
+    "useCommercialNetwork": "Usar red comercial",
+    "govUsesGovNetwork": "Gov usa red gov"
+  },
+  "debug": {
+    "title": "Consola de depuración",
+    "activeIdentity": "Identidad activa",
+    "effectiveModules": "Módulos efectivos",
+    "noProfile": "Ningún perfil seleccionado",
+    "profileId": "ID Perfil",
+    "appId": "ID App",
+    "tenantId": "ID Tenant",
+    "networkType": "Tipo de red",
+    "realm": "Dominio",
+    "mode": "Modo",
+    "actorId": "ID Actor"
+  },
+  "demoAccounts": {
+    "title": "Cuentas de demostración",
+    "builtIn": "Perfiles integrados",
+    "custom": "Perfiles personalizados",
+    "createCustom": "Crear perfil personalizado",
+    "noCustom": "Sin perfiles personalizados",
+    "walkthrough": "Recorrido",
+    "resetAll": "Reiniciar todo"
+  },
+  "networkTypes": {
+    "government": "Gobierno",
+    "commercial": "Comercial"
+  },
+  "modes": {
+    "platform_admin": "Admin Plataforma",
+    "service": "Servicio",
+    "delegated": "Delegado"
+  },
+  "realms": {
+    "government": "Gobierno",
+    "business": "Negocio",
+    "citizen": "Ciudadano",
+    "platform": "Plataforma"
+  }
+}

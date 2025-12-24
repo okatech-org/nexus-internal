@@ -1,0 +1,132 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "create": "Create",
+    "edit": "Edit",
+    "close": "Close",
+    "open": "Open",
+    "send": "Send",
+    "reset": "Reset",
+    "search": "Search",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "yes": "Yes",
+    "no": "No",
+    "enabled": "Enabled",
+    "disabled": "Disabled"
+  },
+  "nav": {
+    "home": "Home",
+    "debug": "Debug",
+    "simulator": "Simulator"
+  },
+  "quickDemo": {
+    "title": "Quick Demo",
+    "platformAdmin": "Platform Admin",
+    "govService": "Gov Service",
+    "bizService": "Biz Service",
+    "citizen": "Citizen",
+    "govAgent": "Gov Agent",
+    "openComms": "Comms Center",
+    "openAsted": "iAsted"
+  },
+  "modules": {
+    "icom": "iCom",
+    "iboite": "iBoîte",
+    "iasted": "iAsted",
+    "icorrespondance": "iCorrespondance"
+  },
+  "simulator": {
+    "title": "Multi-App Simulator",
+    "subtitle": "Side-by-side app communication",
+    "clientApp1": "Client App #1",
+    "clientApp2": "Client App #2",
+    "selectProfile": "Select profile",
+    "bothToGov": "Both to Gov",
+    "bothToCommercial": "Both to Commercial",
+    "resetData": "Reset",
+    "policies": "Policies",
+    "conversations": "Conversations",
+    "threads": "Threads",
+    "noConversations": "No conversations. Click + to start one.",
+    "noThreads": "No threads. Enter a subject and click + to start one.",
+    "noMessages": "No messages yet",
+    "typeMessage": "Type a message...",
+    "replyToThread": "Reply to thread...",
+    "newThreadSubject": "New thread subject...",
+    "createConversation": "Create conversation with other app",
+    "createThread": "Create thread with other app",
+    "needBothApps": "Need both apps to be configured in same network",
+    "sameNetworkRequired": "Apps must be in the same tenant and network",
+    "conversationCreated": "Conversation created",
+    "threadCreated": "Thread created",
+    "enterSubject": "Please enter a thread subject",
+    "platformDataReset": "Platform data reset",
+    "icomDisabled": "iCom disabled for this profile",
+    "iboiteDisabled": "iBoîte disabled for this profile",
+    "iastedSimulation": "iAsted simulation coming soon",
+    "icorrGovOnly": "iCorrespondance (Government only)"
+  },
+  "policies": {
+    "title": "Realm Communication Policies",
+    "governmentNetwork": "Government Network",
+    "commercialNetwork": "Commercial Network",
+    "fromTo": "From \\ To",
+    "gov": "gov",
+    "biz": "biz",
+    "cit": "cit",
+    "pla": "pla",
+    "allowed": "Allowed (hover for modules)",
+    "notAllowed": "Not allowed",
+    "icorrGovOnly": "iCorr = Government only",
+    "noIcorrCommercial": "No iCorr on commercial",
+    "customerService": "Customer service",
+    "publicServices": "Public services",
+    "p2pMessaging": "P2P messaging only",
+    "p2pNotAllowed": "P2P not allowed",
+    "useCommercialNetwork": "Use commercial network",
+    "govUsesGovNetwork": "Gov uses gov network"
+  },
+  "debug": {
+    "title": "Debug Console",
+    "activeIdentity": "Active Identity",
+    "effectiveModules": "Effective Modules",
+    "noProfile": "No profile selected",
+    "profileId": "Profile ID",
+    "appId": "App ID",
+    "tenantId": "Tenant ID",
+    "networkType": "Network Type",
+    "realm": "Realm",
+    "mode": "Mode",
+    "actorId": "Actor ID"
+  },
+  "demoAccounts": {
+    "title": "Demo Accounts",
+    "builtIn": "Built-in Profiles",
+    "custom": "Custom Profiles",
+    "createCustom": "Create Custom Profile",
+    "noCustom": "No custom profiles yet",
+    "walkthrough": "Walkthrough",
+    "resetAll": "Reset All"
+  },
+  "networkTypes": {
+    "government": "Government",
+    "commercial": "Commercial"
+  },
+  "modes": {
+    "platform_admin": "Platform Admin",
+    "service": "Service",
+    "delegated": "Delegated"
+  },
+  "realms": {
+    "government": "Government",
+    "business": "Business",
+    "citizen": "Citizen",
+    "platform": "Platform"
+  }
+}

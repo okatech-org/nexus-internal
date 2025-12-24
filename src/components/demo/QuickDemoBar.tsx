@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { useDemo } from '@/contexts/DemoContext';
 import { Button } from '@/components/ui/button';
 import { 
@@ -13,6 +14,7 @@ import {
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Link } from 'react-router-dom';
+import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 
 interface QuickDemoBarProps {
   onOpenComms: () => void;
@@ -20,14 +22,15 @@ interface QuickDemoBarProps {
 }
 
 const profileButtons = [
-  { id: 'platform_admin_okatech', label: 'Platform Admin', icon: Crown, color: 'text-amber-400 hover:bg-amber-500/20' },
-  { id: 'service_gov_app', label: 'Gov Service', icon: Building2, color: 'text-blue-400 hover:bg-blue-500/20' },
-  { id: 'service_commercial_app', label: 'Biz Service', icon: Briefcase, color: 'text-emerald-400 hover:bg-emerald-500/20' },
-  { id: 'delegated_citizen', label: 'Citizen', icon: User, color: 'text-purple-400 hover:bg-purple-500/20' },
-  { id: 'delegated_gov_agent', label: 'Gov Agent', icon: UserCheck, color: 'text-cyan-400 hover:bg-cyan-500/20' },
+  { id: 'platform_admin_okatech', labelKey: 'quickDemo.platformAdmin', icon: Crown, color: 'text-amber-400 hover:bg-amber-500/20' },
+  { id: 'service_gov_app', labelKey: 'quickDemo.govService', icon: Building2, color: 'text-blue-400 hover:bg-blue-500/20' },
+  { id: 'service_commercial_app', labelKey: 'quickDemo.bizService', icon: Briefcase, color: 'text-emerald-400 hover:bg-emerald-500/20' },
+  { id: 'delegated_citizen', labelKey: 'quickDemo.citizen', icon: User, color: 'text-purple-400 hover:bg-purple-500/20' },
+  { id: 'delegated_gov_agent', labelKey: 'quickDemo.govAgent', icon: UserCheck, color: 'text-cyan-400 hover:bg-cyan-500/20' },
 ];
 
 export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
+  const { t } = useTranslation();
   const { activeProfile, switchProfile, effectiveModules } = useDemo();
   
   const iAstedEnabled = effectiveModules.find(m => m.name === 'iasted')?.enabled ?? false;
@@ -37,7 +40,7 @@ export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
       onOpenAsted();
     } else {
       const reason = effectiveModules.find(m => m.name === 'iasted')?.disabled_reason;
-      toast.error(`iAsted disabled${reason ? `: ${reason}` : ''}`);
+      toast.error(`iAsted ${t('common.disabled')}${reason ? `: ${reason}` : ''}`);
     }
   };
   
@@ -45,8 +48,9 @@ export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
     <div className="flex items-center gap-1 p-1 rounded-lg bg-secondary/30 border border-border/50">
       {/* Profile Buttons */}
       <div className="flex items-center gap-0.5">
-        {profileButtons.map(({ id, label, icon: Icon, color }) => {
+        {profileButtons.map(({ id, labelKey, icon: Icon, color }) => {
           const isActive = activeProfile?.id === id;
+          const label = t(labelKey);
           return (
             <Button
               key={id}
@@ -79,7 +83,7 @@ export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
           className="h-8 px-2 gap-1.5 text-xs font-medium text-foreground hover:bg-primary/20"
         >
           <MessageCircle className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">Comms</span>
+          <span className="hidden md:inline">{t('quickDemo.openComms')}</span>
         </Button>
         
         <Button
@@ -92,7 +96,7 @@ export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
           )}
         >
           <Brain className="w-3.5 h-3.5" />
-          <span className="hidden md:inline">iAsted</span>
+          <span className="hidden md:inline">{t('quickDemo.openAsted')}</span>
         </Button>
         
         <Link to="/debug">
@@ -102,7 +106,7 @@ export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
             className="h-8 px-2 gap-1.5 text-xs font-medium text-muted-foreground hover:bg-secondary/50"
           >
             <Code2 className="w-3.5 h-3.5" />
-            <span className="hidden md:inline">Debug</span>
+            <span className="hidden md:inline">{t('nav.debug')}</span>
           </Button>
         </Link>
         
@@ -112,9 +116,13 @@ export function QuickDemoBar({ onOpenComms, onOpenAsted }: QuickDemoBarProps) {
             size="sm"
             className="h-8 px-2 gap-1.5 text-xs font-medium border-primary/50 text-primary hover:bg-primary/10"
           >
-            <span>Simulator</span>
+            <span>{t('nav.simulator')}</span>
           </Button>
         </Link>
+        
+        {/* Language Switcher */}
+        <div className="w-px h-6 bg-border/50 mx-1" />
+        <LanguageSwitcher />
       </div>
     </div>
   );
