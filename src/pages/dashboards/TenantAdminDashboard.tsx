@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate, useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { motion } from 'framer-motion';
 import { 
@@ -20,7 +20,10 @@ import {
   Users,
   TrendingUp,
   Clock,
-  RefreshCw
+  RefreshCw,
+  ArrowLeft,
+  ExternalLink,
+  Layers
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +38,7 @@ import { AdminLayout } from '@/components/layout/AdminLayout';
 import { CreateApplicationDialog } from '@/components/tenant/CreateApplicationDialog';
 import { InviteUserDialog } from '@/components/tenant/InviteUserDialog';
 import { UsageMetricsChart } from '@/components/tenant/UsageMetricsChart';
+import { ModuleSettingsPanel } from '@/components/tenant/ModuleSettingsPanel';
 import { cn } from '@/lib/utils';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
@@ -262,18 +266,23 @@ function AppsList() {
 
       <div className="grid gap-4">
         {allApps.length > 0 ? allApps.map((app) => (
-          <Card key={app.app_id} className="bg-card/50 border-border/50">
+          <Card key={app.app_id} className="bg-card/50 border-border/50 hover:border-primary/30 transition-colors">
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                <Link 
+                  to={`/admin/tenant/apps/${app.id}`}
+                  className="flex items-center gap-3 flex-1 group"
+                >
                   <div className="w-10 h-10 rounded-lg bg-primary/20 flex items-center justify-center">
                     <AppWindow className="w-5 h-5 text-primary" />
                   </div>
                   <div>
-                    <h3 className="font-medium text-foreground">{app.name}</h3>
+                    <h3 className="font-medium text-foreground group-hover:text-primary transition-colors">
+                      {app.name}
+                    </h3>
                     <p className="text-xs text-muted-foreground font-mono">{app.app_id}</p>
                   </div>
-                </div>
+                </Link>
                 
                 <div className="flex items-center gap-3">
                   <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
@@ -287,8 +296,18 @@ function AppsList() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem>Configurer</DropdownMenuItem>
-                      <DropdownMenuItem>Modules</DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/admin/tenant/apps/${app.id}`}>
+                          <Settings className="w-4 h-4 mr-2" />
+                          Configurer
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to={`/admin/tenant/apps/${app.id}#modules`}>
+                          <Layers className="w-4 h-4 mr-2" />
+                          Modules
+                        </Link>
+                      </DropdownMenuItem>
                       <DropdownMenuItem className="text-destructive">Désactiver</DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
@@ -325,6 +344,151 @@ function AppsList() {
         tenantId={tenantId}
         onSuccess={fetchApps}
       />
+    </motion.div>
+  );
+}
+
+// Application Detail Page with Module Settings
+function ApplicationDetail() {
+  const { appId } = useParams<{ appId: string }>();
+  const navigate = useNavigate();
+  const [app, setApp] = useState<Application | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchApp = async () => {
+      if (!appId) return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('applications')
+          .select('*')
+          .eq('id', appId)
+          .maybeSingle();
+
+        if (error) throw error;
+        setApp(data);
+      } catch (error) {
+        console.error('Error fetching application:', error);
+        toast.error('Application non trouvée');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchApp();
+  }, [appId]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <RefreshCw className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (!app) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+        <Card className="bg-card/50 border-border/50">
+          <CardContent className="py-12 text-center">
+            <p className="text-muted-foreground mb-4">Application non trouvée</p>
+            <Button variant="outline" onClick={() => navigate('/admin/tenant/apps')}>
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Retour aux applications
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/admin/tenant/apps')}>
+            <ArrowLeft className="w-5 h-5" />
+          </Button>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 rounded-xl bg-primary/20 flex items-center justify-center">
+              <AppWindow className="w-6 h-6 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-xl font-semibold">{app.name}</h2>
+              <p className="text-sm text-muted-foreground font-mono">{app.app_id}</p>
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Badge variant={app.status === 'active' ? 'default' : 'secondary'}>
+            {app.status === 'active' ? 'Actif' : 'Désactivé'}
+          </Badge>
+          <Badge variant="outline">{app.network_type}</Badge>
+        </div>
+      </div>
+
+      {/* Application Info */}
+      <Card className="bg-card/50 border-border/50">
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Settings className="w-5 h-5" />
+            Informations
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4 md:grid-cols-2">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">Nom</label>
+            <Input value={app.name} className="mt-1" readOnly />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">Identifiant</label>
+            <Input value={app.app_id} className="mt-1 font-mono" readOnly />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">Type de réseau</label>
+            <Input value={app.network_type} className="mt-1 capitalize" readOnly />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground">Créé le</label>
+            <Input 
+              value={new Date(app.created_at).toLocaleDateString('fr-FR', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+              })} 
+              className="mt-1" 
+              readOnly 
+            />
+          </div>
+          {app.description && (
+            <div className="md:col-span-2">
+              <label className="text-sm font-medium text-muted-foreground">Description</label>
+              <Input value={app.description} className="mt-1" readOnly />
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Module Settings */}
+      <div id="modules">
+        <Card className="bg-card/50 border-border/50">
+          <CardHeader>
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Layers className="w-5 h-5" />
+              Configuration des modules
+            </CardTitle>
+            <CardDescription>
+              Activez ou désactivez les modules disponibles pour cette application
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ModuleSettingsPanel applicationId={app.id} />
+          </CardContent>
+        </Card>
+      </div>
     </motion.div>
   );
 }
@@ -773,6 +937,7 @@ export default function TenantAdminDashboard() {
       <Routes>
         <Route index element={<DashboardOverview />} />
         <Route path="apps" element={<AppsList />} />
+        <Route path="apps/:appId" element={<ApplicationDetail />} />
         <Route path="modules" element={<ModulesConfig />} />
         <Route path="icom" element={<IComConfig />} />
         <Route path="iboite" element={<IBoiteConfig />} />
