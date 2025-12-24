@@ -350,24 +350,25 @@ export default function ServiceDashboard() {
           }}
         />
         
-        {/* Main Content */}
-        <SidebarInset className="flex-1">
-          {/* Header */}
-          <header className="border-b border-border/50 bg-card/50 backdrop-blur-sm sticky top-0 z-40">
-            <div className="px-6 py-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <SidebarTrigger className="-ml-1" />
-                  <div className="flex items-center gap-3">
-                    <div className={cn("w-10 h-10 rounded-xl flex items-center justify-center", profileConfig.bgColor)}>
-                      <ProfileIcon className={cn("w-5 h-5", profileConfig.color)} />
+      {/* Main Content */}
+        <SidebarInset className="flex-1 flex flex-col min-w-0">
+          {/* Header - Responsive */}
+          <header className="border-b border-border/50 bg-card/80 backdrop-blur-md sticky top-0 z-40">
+            <div className="px-3 sm:px-6 py-3 sm:py-4">
+              <div className="flex items-center justify-between gap-2">
+                {/* Left section - Title */}
+                <div className="flex items-center gap-2 sm:gap-4 min-w-0">
+                  <SidebarTrigger className="shrink-0" />
+                  <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                    <div className={cn("w-8 h-8 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center shrink-0", profileConfig.bgColor)}>
+                      <ProfileIcon className={cn("w-4 h-4 sm:w-5 sm:h-5", profileConfig.color)} />
                     </div>
-                    <div>
-                      <h1 className="text-xl font-bold text-foreground">{profileConfig.name}</h1>
-                      <div className="flex items-center gap-2">
+                    <div className="min-w-0">
+                      <h1 className="text-base sm:text-xl font-bold text-foreground truncate">{profileConfig.name}</h1>
+                      <div className="hidden sm:flex items-center gap-2">
                         <p className="text-xs text-muted-foreground font-mono">{payload?.app_id || 'client-portal'}</p>
                         <span className={cn(
-                          "w-2 h-2 rounded-full",
+                          "w-2 h-2 rounded-full shrink-0",
                           isConnected ? "bg-green-500" : "bg-muted"
                         )} />
                       </div>
@@ -375,325 +376,339 @@ export default function ServiceDashboard() {
                   </div>
                 </div>
             
-            <div className="flex items-center gap-4">
-              <Button 
-                variant="outline" 
-                className="hidden md:flex w-64 justify-start text-muted-foreground gap-2"
-                onClick={globalSearch.open}
-              >
-                <Search className="w-4 h-4" />
-                <span>Rechercher...</span>
-                <Badge variant="outline" className="ml-auto text-xs gap-1">
-                  <Command className="w-3 h-3" />K
-                </Badge>
-              </Button>
+                {/* Right section - Actions */}
+                <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+                  {/* Search - Desktop only */}
+                  <Button 
+                    variant="outline" 
+                    className="hidden lg:flex w-48 xl:w-64 justify-start text-muted-foreground gap-2"
+                    onClick={globalSearch.open}
+                  >
+                    <Search className="w-4 h-4" />
+                    <span className="truncate">Rechercher...</span>
+                    <Badge variant="outline" className="ml-auto text-xs gap-1">
+                      <Command className="w-3 h-3" />K
+                    </Badge>
+                  </Button>
+                  
+                  {/* Search icon - Mobile */}
+                  <Button 
+                    variant="ghost" 
+                    size="icon"
+                    onClick={globalSearch.open}
+                    className="lg:hidden h-8 w-8 sm:h-9 sm:w-9"
+                    title="Rechercher"
+                  >
+                    <Search className="w-4 h-4" />
+                  </Button>
               
-              {/* Team Performance Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowTeamPerformance(true)}
-                title="Performance équipe"
-              >
-                <UsersRound className="w-5 h-5 text-blue-500" />
-              </Button>
-              
-              {/* Stats Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowStats(true)}
-                title="Statistiques"
-              >
-                <BarChart3 className="w-5 h-5 text-cyan-500" />
-              </Button>
-              
-              {/* Monthly Quests Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowMonthlyQuests(true)}
-                className="relative"
-                title="Quêtes mensuelles"
-              >
-                <Sparkles className="w-5 h-5 text-purple-500" />
-                {monthlyQuests.claimableCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-purple-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
-                    {monthlyQuests.claimableCount}
-                  </span>
-                )}
-              </Button>
-              
-              {/* Weekly Rewards Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowWeeklyRewards(true)}
-                className="relative"
-                title="Récompenses hebdo"
-              >
-                <Gift className="w-5 h-5 text-pink-500" />
-                {weeklyRewards.challengeStreak > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-pink-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
-                    {weeklyRewards.challengeStreak}
-                  </span>
-                )}
-              </Button>
-              
-              {/* Daily Challenges Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowChallenges(true)}
-                className="relative"
-                title="Défis du jour"
-              >
-                <Target className="w-5 h-5 text-orange-500" />
-                {dailyChallenges.completedCount < dailyChallenges.totalChallenges && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-orange-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
-                    {dailyChallenges.totalChallenges - dailyChallenges.completedCount}
-                  </span>
-                )}
-              </Button>
-              
-              {/* Badges Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowBadges(true)}
-                className="relative"
-                title="Badges"
-              >
-                <Trophy className="w-5 h-5 text-amber-500" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-amber-500 rounded-full text-xs flex items-center justify-center text-white font-medium">
-                  {stats.level}
-                </span>
-              </Button>
-              
-              {/* Leaderboard Button */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowLeaderboard(true)}
-                title="Classement"
-              >
-                <Crown className="w-5 h-5 text-purple-500" />
-              </Button>
-              
-              {/* Notifications */}
-              <div className="relative">
+                  {/* Quick Stats - Hidden on mobile */}
+                  <div className="hidden md:flex items-center gap-1">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowTeamPerformance(true)}
+                      title="Performance équipe"
+                      className="h-8 w-8 sm:h-9 sm:w-9"
+                    >
+                      <UsersRound className="w-4 h-4 text-blue-500" />
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowStats(true)}
+                      title="Statistiques"
+                      className="h-8 w-8 sm:h-9 sm:w-9"
+                    >
+                      <BarChart3 className="w-4 h-4 text-cyan-500" />
+                    </Button>
+                  </div>
+                  
+                  {/* Gamification Quick Access */}
+                  <div className="flex items-center">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowMonthlyQuests(true)}
+                      className="relative h-8 w-8 sm:h-9 sm:w-9"
+                      title="Quêtes mensuelles"
+                    >
+                      <Sparkles className="w-4 h-4 text-purple-500" />
+                      {monthlyQuests.claimableCount > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-purple-500 rounded-full text-[10px] sm:text-xs flex items-center justify-center text-white font-medium">
+                          {monthlyQuests.claimableCount}
+                        </span>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowChallenges(true)}
+                      className="relative h-8 w-8 sm:h-9 sm:w-9"
+                      title="Défis du jour"
+                    >
+                      <Target className="w-4 h-4 text-orange-500" />
+                      {dailyChallenges.completedCount < dailyChallenges.totalChallenges && (
+                        <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-orange-500 rounded-full text-[10px] sm:text-xs flex items-center justify-center text-white font-medium">
+                          {dailyChallenges.totalChallenges - dailyChallenges.completedCount}
+                        </span>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowBadges(true)}
+                      className="relative h-8 w-8 sm:h-9 sm:w-9"
+                      title="Badges"
+                    >
+                      <Trophy className="w-4 h-4 text-amber-500" />
+                      <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 sm:w-4 sm:h-4 bg-amber-500 rounded-full text-[10px] sm:text-xs flex items-center justify-center text-white font-medium">
+                        {stats.level}
+                      </span>
+                    </Button>
+                  </div>
+                  
+                  {/* Notifications */}
+                  <div className="relative">
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowNotifications(!showNotifications)}
+                      className="relative h-8 w-8 sm:h-9 sm:w-9"
+                    >
+                      <Bell className="w-4 h-4" />
+                      {totalNotifications > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 w-4 h-4 sm:w-5 sm:h-5 bg-destructive rounded-full text-[10px] sm:text-xs flex items-center justify-center text-destructive-foreground font-medium">
+                          {totalNotifications > 9 ? '9+' : totalNotifications}
+                        </span>
+                      )}
+                    </Button>
+                    
+                    <AnimatePresence>
+                      {showNotifications && (
+                        <motion.div
+                          initial={{ opacity: 0, y: 10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: 10 }}
+                          className="absolute right-0 top-12 w-72 sm:w-80 glass-strong rounded-xl border border-border/50 shadow-xl z-50"
+                        >
+                          <div className="p-3 border-b border-border/50">
+                            <h4 className="font-medium text-foreground text-sm">Notifications temps réel</h4>
+                            <p className="text-xs text-muted-foreground">
+                              {recentEvents.length} événements récents
+                            </p>
+                          </div>
+                          <ScrollArea className="h-64">
+                            <div className="p-2 space-y-1">
+                              {recentEvents.length > 0 ? (
+                                recentEvents.map((event) => (
+                                  <div
+                                    key={event.event_id}
+                                    className="p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
+                                  >
+                                    <div className="flex items-center gap-2">
+                                      <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
+                                        {event.type.includes('call') ? (
+                                          <Phone className="w-4 h-4 text-orange-500" />
+                                        ) : (
+                                          <MessageCircle className="w-4 h-4 text-icom" />
+                                        )}
+                                      </div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-foreground truncate">
+                                          {event.type.replace('.', ' ')}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                          {new Date(event.timestamp).toLocaleTimeString('fr-FR')}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                ))
+                              ) : (
+                                <div className="p-4 text-center text-muted-foreground text-sm">
+                                  En attente d'événements...
+                                </div>
+                              )}
+                            </div>
+                          </ScrollArea>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  <UserMenu />
+                </div>
+              </div>
+            </div>
+          </header>
+      
+          {/* Main Scrollable Content */}
+          <main className="flex-1 overflow-auto px-3 sm:px-6 py-4 sm:py-8">
+            {/* Mobile Status Bar */}
+            <div className="flex sm:hidden items-center justify-between mb-4 p-3 rounded-xl bg-card/50 border border-border/50">
+              <div className="flex items-center gap-2">
+                <span className={cn(
+                  "w-2 h-2 rounded-full",
+                  isConnected ? "bg-green-500" : "bg-muted"
+                )} />
+                <span className="text-xs text-muted-foreground font-mono">{payload?.app_id}</span>
+              </div>
+              <div className="flex items-center gap-2">
                 <Button 
                   variant="ghost" 
-                  size="icon"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative"
+                  size="sm"
+                  onClick={() => setShowWeeklyRewards(true)}
+                  className="h-7 px-2 text-xs gap-1"
                 >
-                  <Bell className="w-5 h-5" />
-                  {totalNotifications > 0 && (
-                    <span className="absolute -top-1 -right-1 w-5 h-5 bg-destructive rounded-full text-xs flex items-center justify-center text-destructive-foreground font-medium">
-                      {totalNotifications > 9 ? '9+' : totalNotifications}
-                    </span>
-                  )}
+                  <Gift className="w-3 h-3 text-pink-500" />
+                  <span>{weeklyRewards.challengeStreak}j</span>
                 </Button>
-                
-                <AnimatePresence>
-                  {showNotifications && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: 10 }}
-                      className="absolute right-0 top-12 w-80 glass rounded-xl border border-border/50 shadow-xl z-50"
-                    >
-                      <div className="p-3 border-b border-border/50">
-                        <h4 className="font-medium text-foreground">Notifications temps réel</h4>
-                        <p className="text-xs text-muted-foreground">
-                          {recentEvents.length} événements récents
-                        </p>
-                      </div>
-                      <ScrollArea className="h-64">
-                        <div className="p-2 space-y-1">
-                          {recentEvents.length > 0 ? (
-                            recentEvents.map((event) => (
-                              <div
-                                key={event.event_id}
-                                className="p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center">
-                                    {event.type.includes('call') ? (
-                                      <Phone className="w-4 h-4 text-orange-500" />
-                                    ) : (
-                                      <MessageCircle className="w-4 h-4 text-icom" />
-                                    )}
-                                  </div>
-                                  <div className="flex-1 min-w-0">
-                                    <p className="text-sm font-medium text-foreground truncate">
-                                      {event.type.replace('.', ' ')}
-                                    </p>
-                                    <p className="text-xs text-muted-foreground">
-                                      {new Date(event.timestamp).toLocaleTimeString('fr-FR')}
-                                    </p>
-                                  </div>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="p-4 text-center text-muted-foreground text-sm">
-                              En attente d'événements...
-                            </div>
-                          )}
-                        </div>
-                      </ScrollArea>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => setShowLeaderboard(true)}
+                  className="h-7 px-2 text-xs gap-1"
+                >
+                  <Crown className="w-3 h-3 text-purple-500" />
+                </Button>
               </div>
-              
-              {/* Notification Settings */}
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={() => setShowNotificationSettings(true)}
-                title="Paramètres notifications"
-              >
-                <Bell className={cn(
-                  "w-5 h-5",
-                  notifications.permission === 'granted' ? "text-success" : "text-muted-foreground"
-                )} />
-              </Button>
-              
-              <UserMenu />
             </div>
-          </div>
-        </div>
-      </header>
-      
-      <main className="px-6 py-8">
-        {/* Status & Quick Stats - Adapted for Biz profile */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className={cn(
-            "grid gap-4 mb-8",
-            isBizProfile ? "md:grid-cols-2" : "md:grid-cols-2 lg:grid-cols-4"
-          )}
-        >
-          {hasCall && (
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Appels manqués</CardTitle>
-                <PhoneMissed className="w-4 h-4 text-orange-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardStats.missedCalls}</div>
-                <p className="text-xs text-muted-foreground mt-1">Aujourd'hui</p>
-              </CardContent>
-            </Card>
-          )}
-          
-          {hasContact && (
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Contacts</CardTitle>
-                <Users className="w-4 h-4 text-emerald-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardStats.totalContacts}</div>
-                <p className="text-xs text-muted-foreground mt-1">{mockContacts.filter(c => c.status === 'online').length} en ligne</p>
-              </CardContent>
-            </Card>
-          )}
-          
-          {hasChat && (
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Messages non lus</CardTitle>
-                <MessageCircle className="w-4 h-4 text-blue-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardStats.unreadMessages}</div>
-                <p className="text-xs text-muted-foreground mt-1">+2 aujourd'hui</p>
-              </CardContent>
-            </Card>
-          )}
-          
-          {hasMeeting && (
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Réunions prévues</CardTitle>
-                <Video className="w-4 h-4 text-purple-500" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardStats.upcomingMeetings}</div>
-                <p className="text-xs text-muted-foreground mt-1">Cette semaine</p>
-              </CardContent>
-            </Card>
-          )}
-          
-          {hasIboite && !isBizProfile && (
-            <Card className="bg-card/50 border-border/50">
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">Threads en attente</CardTitle>
-                <Inbox className="w-4 h-4 text-iboite" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{dashboardStats.pendingThreads}</div>
-                <p className="text-xs text-muted-foreground mt-1">Dont 1 urgent</p>
-              </CardContent>
-            </Card>
-          )}
-        </motion.div>
 
-        {/* Quick Actions */}
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="flex flex-wrap gap-3 mb-8"
-        >
-          <Button 
-            variant="default" 
-            onClick={openCommsCenter}
-            className="gap-2"
-          >
-            {isBizProfile ? <Phone className="w-4 h-4" /> : <MessageCircle className="w-4 h-4" />}
-            Centre de Communication
-          </Button>
-          {hasCall && (
-            <Button variant="outline" className="gap-2 border-orange-500/30 hover:bg-orange-500/10">
-              <Phone className="w-4 h-4 text-orange-500" />
-              Passer un appel
-            </Button>
-          )}
-          {hasContact && (
-            <Button variant="outline" className="gap-2">
-              <Plus className="w-4 h-4" />
-              Nouveau contact
-            </Button>
-          )}
-          {hasChat && (
-            <Button variant="outline" className="gap-2">
-              <Send className="w-4 h-4" />
-              Nouvelle conversation
-            </Button>
-          )}
-          {hasMeeting && (
-            <Button variant="outline" className="gap-2">
-              <Video className="w-4 h-4" />
-              Planifier une réunion
-            </Button>
-          )}
-        </motion.div>
+            {/* Status & Quick Stats - Responsive grid */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className={cn(
+                "grid gap-3 sm:gap-4 mb-6 sm:mb-8",
+                isBizProfile 
+                  ? "grid-cols-2" 
+                  : "grid-cols-2 lg:grid-cols-4"
+              )}
+            >
+              {hasCall && (
+                <Card className="bg-card/50 border-border/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Appels manqués</CardTitle>
+                    <PhoneMissed className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+                    <div className="text-xl sm:text-2xl font-bold">{dashboardStats.missedCalls}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Aujourd'hui</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {hasContact && (
+                <Card className="bg-card/50 border-border/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Contacts</CardTitle>
+                    <Users className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-emerald-500" />
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+                    <div className="text-xl sm:text-2xl font-bold">{dashboardStats.totalContacts}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">{mockContacts.filter(c => c.status === 'online').length} en ligne</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {hasChat && (
+                <Card className="bg-card/50 border-border/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Messages</CardTitle>
+                    <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-500" />
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+                    <div className="text-xl sm:text-2xl font-bold">{dashboardStats.unreadMessages}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Non lus</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {hasMeeting && (
+                <Card className="bg-card/50 border-border/50">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Réunions</CardTitle>
+                    <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-purple-500" />
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+                    <div className="text-xl sm:text-2xl font-bold">{dashboardStats.upcomingMeetings}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">Cette semaine</p>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {hasIboite && !isBizProfile && (
+                <Card className="bg-card/50 border-border/50 col-span-2 sm:col-span-1">
+                  <CardHeader className="flex flex-row items-center justify-between pb-1 sm:pb-2 p-3 sm:p-6">
+                    <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground">Threads</CardTitle>
+                    <Inbox className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-iboite" />
+                  </CardHeader>
+                  <CardContent className="p-3 sm:p-6 pt-0">
+                    <div className="text-xl sm:text-2xl font-bold">{dashboardStats.pendingThreads}</div>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground mt-0.5 sm:mt-1">En attente · 1 urgent</p>
+                  </CardContent>
+                </Card>
+              )}
+            </motion.div>
 
-        <div className={cn(
-          "grid gap-6",
-          isBizProfile ? "lg:grid-cols-2" : "lg:grid-cols-3"
-        )}>
-          {/* Main Content Area */}
-          <div className={cn(
-            "space-y-6",
-            isBizProfile ? "" : "lg:col-span-2"
-          )}>
+            {/* Quick Actions - Scrollable on mobile */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              className="mb-6 sm:mb-8"
+            >
+              <ScrollArea className="w-full" type="scroll">
+                <div className="flex gap-2 sm:gap-3 pb-2 min-w-max">
+                  <Button 
+                    variant="default" 
+                    onClick={openCommsCenter}
+                    className="gap-2 h-9 sm:h-10 text-xs sm:text-sm whitespace-nowrap"
+                  >
+                    {isBizProfile ? <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+                    Centre de Communication
+                  </Button>
+                  {hasCall && (
+                    <Button variant="outline" className="gap-2 border-orange-500/30 hover:bg-orange-500/10 h-9 sm:h-10 text-xs sm:text-sm whitespace-nowrap">
+                      <Phone className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-orange-500" />
+                      Appel
+                    </Button>
+                  )}
+                  {hasContact && (
+                    <Button variant="outline" className="gap-2 h-9 sm:h-10 text-xs sm:text-sm whitespace-nowrap">
+                      <Plus className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Contact
+                    </Button>
+                  )}
+                  {hasChat && (
+                    <Button variant="outline" className="gap-2 h-9 sm:h-10 text-xs sm:text-sm whitespace-nowrap">
+                      <Send className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Message
+                    </Button>
+                  )}
+                  {hasMeeting && (
+                    <Button variant="outline" className="gap-2 h-9 sm:h-10 text-xs sm:text-sm whitespace-nowrap">
+                      <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      Réunion
+                    </Button>
+                  )}
+                </div>
+              </ScrollArea>
+            </motion.div>
+
+            <div className={cn(
+              "grid gap-4 sm:gap-6",
+              isBizProfile ? "lg:grid-cols-2" : "lg:grid-cols-3"
+            )}>
+              {/* Main Content Area */}
+              <div className={cn(
+                "space-y-4 sm:space-y-6",
+                isBizProfile ? "" : "lg:col-span-2"
+              )}>
             {/* Recent Calls - Primary for Biz profile */}
             {hasCall && (
               <motion.div
@@ -871,8 +886,8 @@ export default function ServiceDashboard() {
             )}
           </div>
 
-          {/* Right Column */}
-          <div className="space-y-6">
+              {/* Right Column */}
+              <div className="space-y-4 sm:space-y-6">
             {/* Contacts - Primary for Biz profile */}
             {hasContact && (
               <motion.div
@@ -1075,25 +1090,25 @@ export default function ServiceDashboard() {
                     ))}
                   </div>
                 </CardContent>
-              </Card>
-            </motion.div>
+                </Card>
+              </motion.div>
+            </div>
           </div>
-        </div>
-        
-        {/* Realtime Status Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.4 }}
-          className="mt-8 flex items-center justify-center gap-2 text-xs text-muted-foreground"
-        >
-          <span className={cn(
-            "w-2 h-2 rounded-full",
-            isConnected ? "bg-green-500 animate-pulse" : "bg-muted"
-          )} />
-          {isConnected ? 'Notifications temps réel actives' : 'Connexion en cours...'}
-        </motion.div>
-      </main>
+          
+          {/* Realtime Status Footer */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+            className="py-4 flex items-center justify-center gap-2 text-xs text-muted-foreground border-t border-border/30"
+          >
+            <span className={cn(
+              "w-2 h-2 rounded-full",
+              isConnected ? "bg-green-500 animate-pulse" : "bg-muted"
+            )} />
+            {isConnected ? 'Notifications temps réel actives' : 'Connexion en cours...'}
+          </motion.div>
+        </main>
       
       {/* Badges Panel */}
       <BadgesPanel
