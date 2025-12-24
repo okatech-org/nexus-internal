@@ -7,8 +7,6 @@ import {
   FileImage, 
   Clock, 
   User,
-  ChevronDown,
-  ChevronUp,
   Eye,
   Download,
   MessageSquare
@@ -16,6 +14,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Document, DocumentAnnotation, AnnotationReply } from '@/types/correspondance';
 import { DocumentAnnotations } from './DocumentAnnotations';
+import { SelectableDocumentContent } from './SelectableDocumentContent';
 import { cn } from '@/lib/utils';
 import { format } from 'date-fns';
 import { fr } from 'date-fns/locale';
@@ -256,12 +255,12 @@ export function DocumentPreview({ document, isOpen, onClose }: DocumentPreviewPr
             <div className="flex-1 overflow-y-auto p-4">
               {activeTab === 'content' && (
                 <div className="space-y-4">
-                  {/* Preview Content */}
-                  <div className="p-4 rounded-lg bg-secondary/30 min-h-[150px]">
-                    <p className="text-sm text-foreground whitespace-pre-wrap">
-                      {document.content}
-                    </p>
-                  </div>
+                  {/* Selectable Preview Content */}
+                  <SelectableDocumentContent
+                    content={document.content}
+                    annotations={annotations}
+                    onAddAnnotation={handleAddAnnotation}
+                  />
                   
                   {/* Metadata */}
                   <div className="grid grid-cols-2 gap-3">
