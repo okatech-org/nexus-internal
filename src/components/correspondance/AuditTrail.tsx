@@ -9,7 +9,10 @@ import {
   Clock,
   Send,
   Shield,
-  Download
+  Download,
+  MessageSquare,
+  MessageCircle,
+  CheckCheck
 } from 'lucide-react';
 import { AuditLogEntry, AuditAction } from '@/types/correspondance';
 import { Button } from '@/components/ui/button';
@@ -34,6 +37,9 @@ const actionConfig: Record<AuditAction, { icon: typeof FileText; color: string; 
   approval_rejected: { icon: XCircle, color: 'text-destructive', label: 'Approbation rejetée' },
   case_status_changed: { icon: Shield, color: 'text-primary', label: 'Statut modifié' },
   case_published: { icon: Send, color: 'text-success', label: 'Dossier publié' },
+  annotation_created: { icon: MessageSquare, color: 'text-primary', label: 'Annotation ajoutée' },
+  annotation_replied: { icon: MessageCircle, color: 'text-muted-foreground', label: 'Réponse ajoutée' },
+  annotation_resolved: { icon: CheckCheck, color: 'text-success', label: 'Annotation résolue' },
 };
 
 export function AuditTrail({ entries, onExport }: AuditTrailProps) {
