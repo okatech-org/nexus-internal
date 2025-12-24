@@ -1,11 +1,10 @@
 import { useNavigate } from 'react-router-dom';
 import { 
   User, Shield, LogOut, Users, Key, Settings, 
-  ChevronDown, Building2, Network, Globe
+  ChevronDown, Building2, Network, Globe, Home
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { 
   DropdownMenu, 
   DropdownMenuContent, 
@@ -51,7 +50,12 @@ export function UserMenu() {
   
   const handleLogout = () => {
     logout();
-    navigate('/login');
+    navigate('/');
+  };
+  
+  const handleBackToHome = () => {
+    logout();
+    navigate('/');
   };
   
   const handleSwitchAccount = () => {
@@ -197,6 +201,14 @@ export function UserMenu() {
         </DropdownMenuGroup>
         
         <DropdownMenuSeparator />
+        
+        <DropdownMenuItem 
+          onClick={handleBackToHome} 
+          className="cursor-pointer"
+        >
+          <Home className="w-4 h-4 mr-2" />
+          Retour à l'accueil
+        </DropdownMenuItem>
         
         <DropdownMenuItem 
           onClick={handleLogout} 
