@@ -31,6 +31,7 @@ import { KeyboardShortcutsDialog } from '@/components/KeyboardShortcutsDialog';
 import { DemoAccountsPanel } from '@/components/demo/DemoAccountsPanel';
 import { PlatformAdminConsole } from '@/components/demo/PlatformAdminConsole';
 import { TenantAdminConsole } from '@/components/demo/TenantAdminConsole';
+import { QuickDemoBar } from '@/components/demo/QuickDemoBar';
 import { useKeyboardShortcuts, KeyboardShortcut } from '@/hooks/useKeyboardShortcuts';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -84,6 +85,7 @@ export default function Index() {
   const [isDemoAccountsOpen, setIsDemoAccountsOpen] = useState(false);
   const [isPlatformAdminOpen, setIsPlatformAdminOpen] = useState(false);
   const [isTenantAdminOpen, setIsTenantAdminOpen] = useState(false);
+  const [isAstedOpen, setIsAstedOpen] = useState(false);
   
   const iCorrespondanceEnabled = effectiveModules.find(m => m.name === 'icorrespondance')?.enabled 
     ?? capabilities?.modules.icorrespondance.enabled;
@@ -190,8 +192,8 @@ export default function Index() {
       {/* Header */}
       <header className="relative z-10 border-b border-border/50">
         <div className="container mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 shrink-0">
               <div className="w-10 h-10 rounded-xl gradient-primary flex items-center justify-center">
                 <Layers className="w-5 h-5 text-foreground" />
               </div>
@@ -201,26 +203,13 @@ export default function Index() {
               </div>
             </div>
             
-            <nav className="flex items-center gap-2">
-              {/* Demo Accounts Button */}
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setIsDemoAccountsOpen(true)}
-                className={cn(
-                  "border-amber-500/50",
-                  activeProfile && "bg-amber-500/10"
-                )}
-              >
-                <Users className="w-4 h-4 mr-2" />
-                Demo Accounts
-                {activeProfile && (
-                  <span className="ml-2 text-[10px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-400">
-                    {activeProfile.label.split(' ')[0]}
-                  </span>
-                )}
-              </Button>
-              
+            {/* Quick Demo Bar - 5 buttons for instant profile switching */}
+            <QuickDemoBar 
+              onOpenComms={openCommsCenter}
+              onOpenAsted={() => setIsAstedOpen(true)}
+            />
+            
+            <nav className="flex items-center gap-2 shrink-0">
               {/* Platform Admin Button */}
               {isPlatformAdmin && (
                 <Button 
@@ -262,16 +251,6 @@ export default function Index() {
               <Button variant="ghost" size="sm" onClick={() => setIsRealtimeOpen(true)}>
                 <Radio className="w-4 h-4 mr-2" />
                 Realtime
-              </Button>
-              <Link to="/debug">
-                <Button variant="ghost" size="sm">
-                  <Code2 className="w-4 h-4 mr-2" />
-                  Debug
-                </Button>
-              </Link>
-              <Button variant="outline" onClick={openCommsCenter}>
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Comms Center
               </Button>
             </nav>
           </div>
