@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 interface WeeklyAnalyticsDashboardProps {
   isOpen: boolean;
   onClose: () => void;
+  onExport?: () => void;
 }
 
 // Generate mock weekly data
@@ -88,7 +89,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function WeeklyAnalyticsDashboard({ isOpen, onClose }: WeeklyAnalyticsDashboardProps) {
+export function WeeklyAnalyticsDashboard({ isOpen, onClose, onExport }: WeeklyAnalyticsDashboardProps) {
   const [activeTab, setActiveTab] = useState('overview');
   
   const weeklyData = useMemo(() => generateWeeklyData(), []);

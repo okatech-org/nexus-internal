@@ -67,8 +67,11 @@ import { TeamPerformancePanel } from '@/components/gamification/TeamPerformanceP
 import { GlobalSearchDialog } from '@/components/search/GlobalSearchDialog';
 import { DetailedCallsView } from '@/components/comms-center/DetailedCallsView';
 import { DetailedConversationsView } from '@/components/comms-center/DetailedConversationsView';
+import { AdvancedContactFilters } from '@/components/comms-center/AdvancedContactFilters';
 import { WeeklyAnalyticsDashboard } from '@/components/analytics/WeeklyAnalyticsDashboard';
+import { AnalyticsExport } from '@/components/analytics/AnalyticsExport';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { CustomGoalsPanel } from '@/components/gamification/CustomGoalsPanel';
 import { AnimatedSection, staggerContainerVariants, staggerItemVariants } from '@/components/animations/PageTransition';
 import { useDailyChallenges } from '@/hooks/useDailyChallenges';
 import { useNotifications } from '@/hooks/useNotifications';
@@ -189,6 +192,9 @@ export default function ServiceDashboard() {
   const [showDetailedCalls, setShowDetailedCalls] = useState(false);
   const [showDetailedConversations, setShowDetailedConversations] = useState(false);
   const [showAnalytics, setShowAnalytics] = useState(false);
+  const [showAdvancedContacts, setShowAdvancedContacts] = useState(false);
+  const [showAnalyticsExport, setShowAnalyticsExport] = useState(false);
+  const [showCustomGoals, setShowCustomGoals] = useState(false);
   
   // Demo: trigger notifications for missed calls/messages
   useEffect(() => {
@@ -458,6 +464,26 @@ export default function ServiceDashboard() {
                       className="h-8 w-8 sm:h-9 sm:w-9"
                     >
                       <BarChart3 className="w-4 h-4 text-cyan-500" />
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowAdvancedContacts(true)}
+                      title="Filtres contacts avancés"
+                      className="h-8 w-8 sm:h-9 sm:w-9"
+                    >
+                      <Users className="w-4 h-4 text-green-500" />
+                    </Button>
+                    
+                    <Button 
+                      variant="ghost" 
+                      size="icon"
+                      onClick={() => setShowCustomGoals(true)}
+                      title="Mes objectifs"
+                      className="h-8 w-8 sm:h-9 sm:w-9"
+                    >
+                      <Target className="w-4 h-4 text-rose-500" />
                     </Button>
                   </div>
                   
@@ -1306,6 +1332,25 @@ export default function ServiceDashboard() {
       <WeeklyAnalyticsDashboard
         isOpen={showAnalytics}
         onClose={() => setShowAnalytics(false)}
+        onExport={() => setShowAnalyticsExport(true)}
+      />
+      
+      {/* Advanced Contact Filters */}
+      <AdvancedContactFilters
+        isOpen={showAdvancedContacts}
+        onClose={() => setShowAdvancedContacts(false)}
+      />
+      
+      {/* Analytics Export */}
+      <AnalyticsExport
+        isOpen={showAnalyticsExport}
+        onClose={() => setShowAnalyticsExport(false)}
+      />
+      
+      {/* Custom Goals Panel */}
+      <CustomGoalsPanel
+        isOpen={showCustomGoals}
+        onClose={() => setShowCustomGoals(false)}
       />
     </SidebarInset>
     </div>
